@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
+import { PortaoDoTermo } from '@/componentes/PortaoDoTermo'
 import { Toaster } from '@/components/ui/sonner'
 import { ProvedorDeSessao, RotaProtegida } from '@/contextos/Sessao'
 import Landing from '@/paginas/Landing'
@@ -7,6 +8,7 @@ import Landing from '@/paginas/Landing'
 const Privacidade = lazy(() => import('@/paginas/Privacidade'))
 const Entrar = lazy(() => import('@/paginas/aluno/Entrar'))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
+const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
 const NaoEncontrada = lazy(() => import('@/paginas/NaoEncontrada'))
 
 /**
@@ -26,7 +28,17 @@ function App() {
               path="/aluno/turmas/:codigo"
               element={
                 <RotaProtegida papel="aluno">
-                  <Turma />
+                  <PortaoDoTermo>
+                    <Turma />
+                  </PortaoDoTermo>
+                </RotaProtegida>
+              }
+            />
+            <Route
+              path="/aluno/meus-dados"
+              element={
+                <RotaProtegida papel="aluno">
+                  <MeusDados />
                 </RotaProtegida>
               }
             />
