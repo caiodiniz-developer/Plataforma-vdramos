@@ -1,1 +1,231 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/*
+ * Tokens da marca — Brand Style Guide Vitor Ramos v1.0 (PRD, seção 9).
+ * Os valores marcados como "derivado" não estão no guia: foram deduzidos da
+ * paleta para completar o tema do shadcn/ui e estão registrados no PRD.
+ */
+:root {
+  --papel: #f4f2ee;
+  --tinta: #181a1e;
+  --principal: #2f6fed;
+  --neutro-claro: #5a5a56;
+  --neutro-escuro: #c9c9c4;
+
+  --background: var(--papel);
+  --foreground: var(--tinta);
+  --card: #ffffff;
+  --card-foreground: var(--tinta);
+  --popover: #ffffff;
+  --popover-foreground: var(--tinta);
+  --primary: var(--principal);
+  --primary-foreground: #ffffff;
+  --secondary: var(--tinta);
+  --secondary-foreground: var(--papel);
+  --muted: #e9e6df; /* derivado: Papel escurecido */
+  --muted-foreground: var(--neutro-claro);
+  --accent: #e9e6df; /* derivado: realce de hover */
+  --accent-foreground: var(--tinta);
+  --destructive: #b3261e; /* derivado: a marca não define vermelho */
+  --destructive-foreground: #ffffff;
+  --border: var(--tinta);
+  --input: var(--tinta);
+  --ring: var(--principal);
+
+  --accent-orange: #d9711c;
+  --accent-violet: #8b5cf6;
+  --accent-green: #1f9d55;
+  /* Roxo nunca recebe texto em cima quando sólido: usar esta versão tingida. */
+  --accent-violet-tint: color-mix(in srgb, var(--accent-violet) 12%, var(--background));
+  --divisor: var(--neutro-escuro);
+
+  --chart-1: var(--principal);
+  --chart-2: var(--accent-orange);
+  --chart-3: var(--accent-violet);
+  --chart-4: var(--accent-green);
+  --chart-5: var(--foreground);
+
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+
+  --radius: 2px;
+}
+
+.dark {
+  --background: var(--tinta);
+  --foreground: var(--papel);
+  --card: #22252a; /* derivado: Tinta clareada */
+  --card-foreground: var(--papel);
+  --popover: #22252a;
+  --popover-foreground: var(--papel);
+  --secondary: var(--papel);
+  --secondary-foreground: var(--tinta);
+  --muted: #2a2d33; /* derivado */
+  --muted-foreground: var(--neutro-escuro);
+  --accent: #2a2d33; /* derivado */
+  --accent-foreground: var(--papel);
+  --destructive: #ff8a80; /* derivado */
+  --destructive-foreground: var(--tinta);
+  --border: var(--papel);
+  --input: var(--papel);
+  --divisor: var(--neutro-claro);
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-papel: var(--papel);
+  --color-tinta: var(--tinta);
+  --color-orange: var(--accent-orange);
+  --color-violet: var(--accent-violet);
+  --color-violet-tint: var(--accent-violet-tint);
+  --color-green: var(--accent-green);
+  --color-neutro: var(--neutro-escuro);
+  --color-divisor: var(--divisor);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: 'Ubuntu', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Ubuntu Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Cantos quase retos em tudo: todos os raios valem 2 px. */
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --radius-2xl: var(--radius);
+  --radius-3xl: var(--radius);
+
+  /* A marca não usa sombras. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--principal);
+    color: #ffffff;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  h1 {
+    letter-spacing: -0.02em;
+  }
+
+  h2,
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Links de corpo: Tinta sublinhada (azul sobre Papel não passa em AA). */
+  a {
+    text-underline-offset: 3px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Bloco "margem" da régua: Papel com hachura no neutro. */
+@utility hachura {
+  background-color: var(--background);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--neutro-escuro) 0,
+    var(--neutro-escuro) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
