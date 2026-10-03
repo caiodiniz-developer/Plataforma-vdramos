@@ -10,3 +10,8 @@ build/
 .vscode/
 supabase/.branches/
 supabase/.temp/
+dist-ssr/
+*.local
+*.log
+*.tsbuildinfo
+coverage/
