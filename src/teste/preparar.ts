@@ -20,4 +20,5 @@ if (typeof window !== 'undefined') {
   Element.prototype.scrollIntoView ??= () => {}
   Element.prototype.hasPointerCapture ??= () => false
   Element.prototype.releasePointerCapture ??= () => {}
+  document.elementFromPoint ??= () => null
 }
