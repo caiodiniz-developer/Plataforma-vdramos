@@ -16,7 +16,9 @@ Referência de estrutura de turma: o cronograma "Excel Básico com IA Generativa
 - Rotas: `/` (landing, pública) · `/aluno/*` (autenticado, papel `aluno`) · `/admin/*` (autenticado, papel `admin`) · `/privacidade` (pública).
 - Tabelas e colunas em snake\_case, nomes em português sem acento. PK `uuid`. Todo registro com `created_at`; os editáveis com `updated_at`.
 - RLS ligado em todas as tabelas. Aluno lê só dados das turmas em que está inscrito e escreve só as próprias respostas. Admin lê e escreve tudo.
-- Realtime (Postgres Changes) nas tabelas `pergunta`, `mensagem`, `atividade` e `atividade_resposta`, filtrado por `sessao_ao_vivo_id`.
+- Realtime (Postgres Changes) nas tabelas `sessao_ao_vivo`, `pergunta`, `mensagem`, `atividade` e `atividade_resposta`, filtrado por `sessao_ao_vivo_id`. A sessão entra na publicação porque é por ela que o aluno recebe abertura, encerramento e os avisos de moderação (pergunta ocultada e mensagem removida deixam de ser visíveis a ele, então o UPDATE dessas linhas não chega pelo Realtime).
+- Escrita do aluno sempre por função (RPC), nunca direto na tabela: `enviar_pergunta`, `alternar_voto`, `enviar_mensagem` e `responder_atividade`. O aluno lê itens e opções de atividade pela função `atividade_para_aluno`, que não devolve o gabarito antes da resposta. Motivo: a RLS filtra linhas, não colunas.
+- Testes: regras de negócio em `src/dominio` (Vitest) e políticas de RLS em `supabase/tests`, rodando as migrations num Postgres em memória (PGlite).
 - Validação de ID de aluno + ID de turma e envio de código de acesso ficam numa Edge Function (`acesso-aluno`), nunca no cliente.
 - Assumido: um único admin (o professor). Papel guardado em `perfil.papel`.
 
@@ -58,6 +60,7 @@ Todas as tabelas têm `id uuid PK default gen_random_uuid()` (exceto `perfil`) e
 | email\_contato | text | not null | E-mail exibido e usado no formulário |
 | telefone | text | nullable | WhatsApp/telefone opcional |
 | linkedin\_url | text | not null | URL do perfil LinkedIn |
+| unico | boolean | not null, default true, unique, check (unico) | Garante a linha única |
 | outros\_links | jsonb | not null, default '\[\]' | Lista `{rotulo, url}` (GitHub etc.) |
 | cidade | text | nullable | Cidade/UF exibida |
 
@@ -203,14 +206,24 @@ Todas as tabelas têm `id uuid PK default gen_random_uuid()` (exceto `perfil`) e
 | Campo | Tipo | Restrições | Descrição |
 | --- | --- | --- | --- |
 | sessao\_ao\_vivo\_id | uuid | not null, FK sessao\_ao\_vivo(id) on delete cascade | Sessão |
-| inscricao\_id | uuid | not null, FK inscricao(id) on delete cascade | Autor (sempre gravado) |
 | bloco\_encontro\_id | uuid | nullable, FK bloco\_encontro(id) on delete set null | Bloco ativo no momento do envio |
+| autor\_nome | text | nullable; null quando `anonima` | Nome exibido no mural |
+| votos | int | not null, default 0, check (>= 0) | Contador mantido por `alternar_voto` |
 | texto | text | not null, 3–500 caracteres | Pergunta |
 | destino | text | not null, check (destino in ('turma','professor')) | 'turma' = mural aberto; 'professor' = só o admin vê |
 | anonima | boolean | not null, default false | Esconde o nome para a turma e no painel |
 | status | text | not null, check (status in ('aberta','respondida','oculta')), default 'aberta' | Moderação |
 | resposta | text | nullable | Resposta escrita do professor |
 | respondida\_em | timestamptz | nullable |  |
+
+**pergunta\_autoria** — tabela `pergunta_autoria` (autor de cada pergunta, sempre gravado; fora do Realtime)
+
+| Campo | Tipo | Restrições | Descrição |
+| --- | --- | --- | --- |
+| pergunta\_id | uuid | PK, FK pergunta(id) on delete cascade | Pergunta |
+| inscricao\_id | uuid | not null, FK inscricao(id) on delete cascade | Autor |
+
+A autoria fica fora de `pergunta` porque o Realtime entrega a linha inteira a quem pode lê-la: com `inscricao_id` na própria tabela, toda pergunta anônima chegaria aos colegas com o autor junto. O autor lê a própria autoria; o professor só lê a de perguntas não anônimas.
 
 **pergunta\_voto** — tabela `pergunta_voto`
 
@@ -225,6 +238,7 @@ Todas as tabelas têm `id uuid PK default gen_random_uuid()` (exceto `perfil`) e
 | --- | --- | --- | --- |
 | sessao\_ao\_vivo\_id | uuid | not null, FK sessao\_ao\_vivo(id) on delete cascade | Sessão |
 | perfil\_id | uuid | not null, FK perfil(id) on delete cascade | Autor (aluno ou admin) |
+| autor\_nome | text | not null; preenchido por trigger | Nome exibido no feed (o aluno não lê `perfil` dos colegas) |
 | tipo | text | not null, check (tipo in ('texto','link','aviso')) | 'aviso' só admin |
 | texto | text | not null, 1–1000 caracteres | Conteúdo |
 | fixada | boolean | not null, default false | Fixada no topo (só admin) |
@@ -279,6 +293,28 @@ Todas as tabelas têm `id uuid PK default gen_random_uuid()` (exceto `perfil`) e
 | correta | boolean | nullable | Calculado no insert para quiz |
 | tempo\_resposta\_ms | int | nullable | Tempo desde a publicação (quiz ao vivo) |
 
+### Infraestrutura (sem acesso pelo cliente)
+
+**limite\_tentativa** — tabela `limite_tentativa` (contagem por IP para os limites das Edge Functions; só a service role acessa)
+
+| Campo | Tipo | Restrições | Descrição |
+| --- | --- | --- | --- |
+| acao | text | not null, check (acao in ('acesso\_aluno','contato')) | Limite aplicado |
+| ip\_hash | text | not null | Hash do IP (o IP não é guardado) |
+
+**cadastro\_pendente** — tabela `cadastro_pendente` (dados do cadastro entre o envio do código e a confirmação)
+
+| Campo | Tipo | Restrições | Descrição |
+| --- | --- | --- | --- |
+| aluno\_autorizado\_id | uuid | PK, FK aluno\_autorizado(id) on delete cascade | ID em cadastro |
+| nome | text | not null | Nome informado |
+| email | text | not null | E-mail a confirmar |
+| quer\_comunicacao | boolean | not null, default false | Valor do switch de comunicação |
+| versao\_termo | text | not null | Versão aceita |
+| expira\_em | timestamptz | not null, default now() + 15 min | Validade |
+
+A versão vigente do termo fica em `src/dominio/consentimento.ts` (`VERSAO_TERMO_VIGENTE`) e na variável `VERSAO_TERMO` das Edge Functions; o texto exibido em `/privacidade` é versionado no repositório.
+
 Enums (todos como `text + check`):
 
 - `perfil.papel`: admin | aluno
@@ -307,11 +343,11 @@ Relações:
 - turma 1—N aluno\_autorizado 1—1 inscricao N—1 perfil (um perfil pode estar em várias turmas).
 - turma 1—N encontro 1—N bloco\_encontro; encontro 1—1 sessao\_ao\_vivo.
 - turma 1—N material (opcionalmente ligado a um encontro).
-- sessao\_ao\_vivo 1—N pergunta, mensagem, atividade; pergunta 1—N pergunta\_voto.
+- sessao\_ao\_vivo 1—N pergunta, mensagem, atividade; pergunta 1—1 pergunta\_autoria N—1 inscricao; pergunta 1—N pergunta\_voto.
 - atividade 1—N atividade\_item 1—N atividade\_opcao; atividade\_item 1—N atividade\_resposta N—1 inscricao.
 - perfil 1—N consentimento.
 
-Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por item e opção, média de escala e NPS), `vw_satisfacao_por_bloco` (média de `escala_1_5` por `bloco_encontro.tipo` e por encontro), `vw_participacao_aluno` (perguntas, mensagens, respostas e acertos por inscrição).
+Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por item e opção, média de escala e NPS), `vw_satisfacao_por_bloco` (média de `escala_1_5` por `bloco_encontro.tipo` e por encontro), `vw_participacao_aluno` (perguntas, mensagens, respostas e acertos por inscrição; perguntas anônimas não entram na contagem), `vw_exportacao_respostas` (linhas do CSV, com hash da inscrição no lugar do nome em atividade anônima), `vw_emails_comunicacao` (e-mails com `comunicacao_professor` vigente = true) e `vw_turma_resumo` (contadores da lista de turmas).
 
 ## 4. Funcionalidades
 
@@ -647,12 +683,24 @@ Fonte: Brand Style Guide Vitor Ramos v1.0. Identidade de contraste alto, tipogra
 
 Tema escuro: `--background` #181a1e, `--foreground` #f4f2ee, `--muted-foreground` #c9c9c4 (Neutro sobre escuro), `--border` #f4f2ee; acentos iguais.
 
+Tokens derivados (Assumido — o guia não define; deduzidos da paleta para completar o tema do shadcn/ui):
+
+| Token | Claro | Escuro | Origem |
+| --- | --- | --- | --- |
+| `--muted` / `--accent` | #e9e6df | #2a2d33 | Papel escurecido / Tinta clareada (hover e fundos discretos) |
+| `--popover` | #ffffff | #22252a | Igual ao card |
+| `--card` (escuro) | — | #22252a | Tinta clareada |
+| `--destructive` | #b3261e | #ff8a80 | A marca não define vermelho; usado só em erro e exclusão |
+| `--accent-violet-tint` | roxo a 12 % sobre o fundo | idem | Regra do roxo na revisão de marca |
+| `--chart-1…5` | azul, laranja, roxo, verde, Tinta | idem | Séries de gráfico |
+
 ### Tipografia
 
 - Títulos H1–H3: Ubuntu Mono 700, letter-spacing -0.02em a -0.01em.
 - Corpo: Ubuntu 500; destaque e chamadas: Ubuntu 700.
 - Eyebrow (rótulo acima de títulos e seções): Ubuntu 700, 10–11 px, maiúsculas, letter-spacing 0.14–0.16em.
 - Escala usada no guia: 10, 11, 12, 13, 16, 18, 19, 28 px.
+- Títulos de página seguem a amostra tipográfica do guia: H1 56 px, H2 36 px, H3 22 px no desktop, reduzindo no celular (H1 36 px, H2 28 px).
 
 ### Forma e espaçamento
 
@@ -678,7 +726,8 @@ Tags de tema da landing seguem o guia: Dados, IA, Educação, Produto, Engenhari
 
 | Achado | Severidade | Regra de implementação |
 | --- | --- | --- |
-| Principal #2f6fed sobre Papel tem contraste 4,07:1, abaixo de 4,5:1 (WCAG AA) para texto comum | Alta | Azul como texto só em ≥ 18,7 px bold ou ≥ 24 px; links de corpo em Tinta sublinhada. Branco sobre azul (4,55:1) pode ser usado em botões |
+| Principal #2f6fed sobre Papel tem contraste 4,07:1, abaixo de 4,5:1 (WCAG AA) para texto comum | Alta | Azul como texto só em ≥ 18,7 px bold ou ≥ 24 px; links de corpo em Tinta sublinhada. Branco sobre azul (4,55:1) pode ser usado em botões. A mesma regra vale no tema escuro (azul sobre Tinta = 3,83:1) |
+| O guia aplica sombra em cards e usa texto Papel sobre os acentos nos badges | Média | Prevalece esta seção: sem sombras; texto sobre acento sempre em Tinta |
 | Laranja (2,97:1), verde (3,12:1) e roxo (3,79:1) sobre Papel falham para texto | Alta | Acentos só como preenchimento, borda ou ícone; texto sobre eles em Tinta (laranja 5,25:1, verde 4,99:1). Roxo: usar fundo tingido (12 %) com texto Tinta, nunca sólido com texto |
 | Neutro sobre escuro #c9c9c4 sobre Papel = 1,49:1 | Média | Usar #c9c9c4 só no tema escuro ou como preenchimento (intervalo) |
 | Status e cor não podem depender só da cor (ex.: acerto em verde) | Média | Sempre ícone ou texto junto ("Correta", "Encerrada") |
