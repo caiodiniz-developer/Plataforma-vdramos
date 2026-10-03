@@ -4,19 +4,23 @@ import { cn } from "cn"
 import { Slot } from "radix-ui"
 
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
+  "inline-flex w-fit shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border-2 border-transparent px-[10px] py-[5px] text-[10px] leading-[1.4] font-bold tracking-[0.14em] whitespace-nowrap uppercase [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
-        secondary:
-          "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
+        default: "border-primary bg-primary text-primary-foreground",
+        secondary: "border-secondary bg-secondary text-secondary-foreground",
         destructive:
-          "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
+          "border-destructive bg-destructive text-destructive-foreground",
         outline:
-          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 [a&]:hover:underline",
+          "border-foreground text-foreground",
+        // Acentos como preenchimento, sempre com texto em Tinta (regra de contraste do PRD).
+        orange: "border-orange bg-orange text-tinta",
+        green: "border-green bg-green text-tinta",
+        // Roxo nunca é sólido com texto: fundo tingido a 12 % e borda roxa.
+        violet: "border-violet bg-violet-tint text-foreground",
+        neutro: "border-neutro bg-neutro text-tinta",
+        margem: "hachura border-neutro text-tinta",
       },
     },
     defaultVariants: {
