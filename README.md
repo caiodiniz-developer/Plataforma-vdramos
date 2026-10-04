@@ -27,6 +27,7 @@ que dependem do backend avisam que ele não está configurado.
 | `npm run build` | Checagem de tipos e build de produção |
 | `npm test` | Testes de domínio, de tela e de banco |
 | `npm run lint` | Lint (oxlint) |
+| `npm run usuarios:exemplo` | Cria o admin e o aluno de exemplo (lê o `.env`) |
 
 ## Organização do código
 
@@ -61,7 +62,12 @@ supabase functions deploy acesso-aluno contato excluir-conta
 supabase secrets set VERSAO_TERMO=2026-10-v1 ORIGENS_PERMITIDAS=https://vitorramos.com
 ```
 
-O primeiro admin é criado no painel do Supabase (Authentication > Users) e promovido com:
+Para desenvolvimento, `supabase db reset` aplica as migrations e o `supabase/seed.sql` (turma de
+exemplo `EXCIA-CPS-2610`), e `npm run usuarios:exemplo` cria o admin e o aluno de exemplo com
+os dados do `.env`. As credenciais ficam no `USERS.md`, que é local e não vai para o git.
+
+Em produção, o primeiro admin pode ser criado pelo mesmo script ou no painel do Supabase
+(Authentication > Users) e promovido com:
 
 ```sql
 insert into public.perfil (id, papel, nome, email)
@@ -92,7 +98,9 @@ admin e visitante. As Edge Functions (Deno) ainda não têm teste automatizado.
 
 ## Status
 
-Pronto: modelo de dados com RLS, funções e views; Edge Functions; landing; privacidade;
-entrada do aluno; página da turma (calendário, materiais, curso).
+Pronto: modelo de dados com RLS, funções e views; Edge Functions; seed e usuários de exemplo;
+landing animada com galeria de exemplo; privacidade; área do aluno completa (entrada, turma,
+atividades, sala ao vivo, "Meus dados"); entrada do admin, painel e mensagens de contato.
 
-Em andamento: sala ao vivo, "Meus dados", atividades na área do aluno e painel admin.
+Em andamento no admin: gestão da landing, cursos e turmas, IDs autorizados, calendário,
+construtor de atividades, painel ao vivo e relatórios.
