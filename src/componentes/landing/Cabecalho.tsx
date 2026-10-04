@@ -2,6 +2,8 @@ import { MenuIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { useSecaoAtiva } from '@/hooks/useSecaoAtiva'
+import { cn } from '@/lib/utils'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 export type Ancora = { rotulo: string; href: string }
@@ -11,6 +13,7 @@ type Props = { ancoras: Ancora[] }
 /** Header fixo da landing: wordmark, âncoras e acesso à área do aluno. */
 export function Cabecalho({ ancoras }: Props) {
   const [menuAberto, setMenuAberto] = useState(false)
+  const ativa = useSecaoAtiva(ancoras.map((a) => a.href.slice(1)))
 
   return (
     <header className="sticky top-0 z-20 border-b-2 bg-background">
@@ -20,11 +23,22 @@ export function Cabecalho({ ancoras }: Props) {
         </Link>
 
         <nav aria-label="Seções da página" className="hidden items-center gap-7 md:flex">
-          {ancoras.map((a) => (
-            <a key={a.href} href={a.href} className="eyebrow text-muted-foreground hover:text-foreground">
-              {a.rotulo}
-            </a>
-          ))}
+          {ancoras.map((a) => {
+            const atual = ativa === a.href.slice(1)
+            return (
+              <a
+                key={a.rotulo}
+                href={a.href}
+                aria-current={atual ? 'true' : undefined}
+                className={cn(
+                  'eyebrow border-b-2 py-1 transition-colors hover:text-foreground',
+                  atual ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground',
+                )}
+              >
+                {a.rotulo}
+              </a>
+            )
+          })}
           <Button asChild size="sm" variant="secondary">
             <Link to="/aluno/entrar">Área do aluno</Link>
           </Button>
@@ -44,7 +58,7 @@ export function Cabecalho({ ancoras }: Props) {
             <nav aria-label="Seções da página" className="flex flex-col gap-1 px-4">
               {ancoras.map((a) => (
                 <a
-                  key={a.href}
+                  key={a.rotulo}
                   href={a.href}
                   onClick={() => setMenuAberto(false)}
                   className="eyebrow border-b border-divisor py-4"
