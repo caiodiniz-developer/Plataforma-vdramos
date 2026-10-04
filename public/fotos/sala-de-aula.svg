@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="t">
+  <title id="t">Ilustração de exemplo: sala de aula com quadro e turma</title>
+  <rect width="1200" height="900" fill="#f4f2ee"/>
+  <!-- quadro com planilha -->
+  <rect x="180" y="90" width="840" height="380" fill="#181a1e"/>
+  <g stroke="#3a3d44" stroke-width="2">
+    <path d="M220 170H980M220 230H980M220 290H980M220 350H980M220 410H980"/>
+    <path d="M330 130V440M470 130V440M610 130V440M750 130V440"/>
+  </g>
+  <rect x="220" y="130" width="760" height="40" fill="#2f6fed"/>
+  <g fill="#f4f2ee">
+    <rect x="345" y="245" width="90" height="16"/>
+    <rect x="485" y="305" width="70" height="16"/>
+    <rect x="625" y="185" width="100" height="16"/>
+    <rect x="765" y="365" width="80" height="16"/>
+  </g>
+  <rect x="610" y="290" width="140" height="60" fill="none" stroke="#d9711c" stroke-width="6"/>
+  <!-- professor -->
+  <circle cx="1080" cy="420" r="42" fill="#181a1e"/>
+  <path d="M1020 640c0-90 26-160 60-160s60 70 60 160z" fill="#181a1e"/>
+  <!-- mesas e alunos -->
+  <g fill="#181a1e">
+    <circle cx="260" cy="610" r="34"/><circle cx="460" cy="610" r="34"/><circle cx="660" cy="610" r="34"/><circle cx="860" cy="610" r="34"/>
+    <circle cx="160" cy="760" r="34"/><circle cx="360" cy="760" r="34"/><circle cx="560" cy="760" r="34"/><circle cx="760" cy="760" r="34"/><circle cx="960" cy="760" r="34"/>
+  </g>
+  <g fill="#c9c9c4" stroke="#181a1e" stroke-width="4">
+    <rect x="190" y="650" width="140" height="40"/><rect x="390" y="650" width="140" height="40"/><rect x="590" y="650" width="140" height="40"/><rect x="790" y="650" width="140" height="40"/>
+    <rect x="90" y="800" width="140" height="40"/><rect x="290" y="800" width="140" height="40"/><rect x="490" y="800" width="140" height="40"/><rect x="690" y="800" width="140" height="40"/><rect x="890" y="800" width="140" height="40"/>
+  </g>
+  <rect x="440" y="650" width="40" height="40" fill="#8b5cf6"/>
+  <rect x="740" y="800" width="40" height="40" fill="#1f9d55"/>
+  <rect x="30" y="30" width="250" height="48" fill="#181a1e"/>
+  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#f4f2ee">FOTO DE EXEMPLO</text>
+</svg>
