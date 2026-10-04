@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="t">
+  <title id="t">Ilustração de exemplo: mentoria em dupla diante de um quadro</title>
+  <rect width="1200" height="900" fill="#f4f2ee"/>
+  <!-- quadro com fluxo -->
+  <rect x="120" y="100" width="960" height="420" fill="#ffffff" stroke="#181a1e" stroke-width="6"/>
+  <g stroke="#181a1e" stroke-width="6" fill="none">
+    <rect x="190" y="250" width="200" height="110"/>
+    <rect x="500" y="170" width="200" height="110"/>
+    <rect x="500" y="330" width="200" height="110"/>
+    <rect x="810" y="250" width="200" height="110"/>
+    <path d="M390 305H450L500 225M450 305L500 385M700 225L760 305H810M700 385L760 305"/>
+  </g>
+  <rect x="190" y="250" width="200" height="30" fill="#2f6fed"/>
+  <rect x="500" y="170" width="200" height="30" fill="#d9711c"/>
+  <rect x="500" y="330" width="200" height="30" fill="#8b5cf6"/>
+  <rect x="810" y="250" width="200" height="30" fill="#1f9d55"/>
+  <!-- duas pessoas -->
+  <circle cx="400" cy="640" r="60" fill="#181a1e"/>
+  <path d="M290 900c0-130 50-200 110-200s110 70 110 200z" fill="#181a1e"/>
+  <circle cx="800" cy="640" r="60" fill="#5a5a56"/>
+  <path d="M690 900c0-130 50-200 110-200s110 70 110 200z" fill="#5a5a56"/>
+  <path d="M500 760L640 700" stroke="#2f6fed" stroke-width="14" stroke-linecap="square"/>
+  <rect x="30" y="30" width="250" height="48" fill="#181a1e"/>
+  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#f4f2ee">FOTO DE EXEMPLO</text>
+</svg>
