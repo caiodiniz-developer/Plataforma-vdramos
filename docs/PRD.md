@@ -357,7 +357,8 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 - Entrada (UI): visitante abre `/`.
 - Comportamento: lê `perfil_publico` e `experiencia` com `publicado = true`; ordena por `ordem` e depois `data_inicio desc`.
-- Saída: hero (nome, título, bio, foto, botões LinkedIn e Contato), seção Experiência com abas Profissional | Docência, seção Contato, rodapé com link `/privacidade` e botão "Área do aluno" → `/aluno/entrar`.
+- Saída: hero (nome, título, bio, foto, botões LinkedIn e Contato), faixa de temas, seção Frentes de trabalho (Palestra, Treinamento e Consultoria, com os textos dos cartões do guia; cada uma abre o contato com o assunto já escolhido), seção Experiência com abas Profissional | Docência, seção Sala de aula interativa (recursos da área do aluno e prévia ilustrativa), galeria de fotos, chamada final, seção Contato, rodapé com link `/privacidade` e botão "Área do aluno" → `/aluno/entrar`.
+- Fotos: configuradas em `src/conteudo/galeria.ts` (arquivos em `public/fotos/`). Enquanto forem ilustrações provisórias, aparecem com a etiqueta "Foto de exemplo". A foto enviada pelo admin (`perfil_publico.foto_path`) tem prioridade sobre o retrato do arquivo.
 
 ### F2 — Formulário de contato
 
@@ -490,7 +491,8 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Landing `/`
 
-- Layout: coluna única, largura máx. 1080 px, gutter 16 px no celular. Header fixo (wordmark "Vitor Ramos" em Ubuntu Mono + links âncora Experiência · Docência · Contato + botão "Área do aluno"). Hero em duas colunas (texto à esquerda, foto à direita; empilha no celular) com eyebrow "Dados · IA · Educação". Experiência em linha do tempo vertical. Contato: cartões de canal (e-mail, LinkedIn, telefone) + formulário.
+- Layout: coluna única, largura máx. 1080 px, gutter 16 px no celular. Header fixo (wordmark "Vitor Ramos" em Ubuntu Mono + links âncora Frentes · Experiência · Docência · Sala de aula · Contato, com destaque na seção em leitura + botão "Área do aluno"), barra de progresso de leitura e botão de voltar ao topo. Hero em duas colunas (texto à esquerda, foto à direita; empilha no celular) com eyebrow "Dados · IA · Educação". Experiência em linha do tempo vertical. Contato: cartões de canal (e-mail, LinkedIn, telefone) + formulário.
+- Movimento: título do hero palavra a palavra, terminal com os temas digitados, faixa de temas rolando, seções e cartões revelados ao rolar, barras da prévia crescendo. Tudo desligado com `prefers-reduced-motion`; nenhuma informação depende da animação. Sem sombras nem gradientes (a grade de fundo do hero é feita de linhas).
 - Componentes shadcn: `NavigationMenu`, `Button`, `Avatar`, `Badge`, `Tabs`, `Card`, `Separator`, `Form`, `Input`, `Textarea`, `Select`, `Checkbox`, `Toast`/`Sonner`, `Sheet` (menu mobile).
 
 ### Privacidade `/privacidade`
