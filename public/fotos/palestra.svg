@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="t">
+  <title id="t">Ilustração de exemplo: palestra com telão e plateia</title>
+  <rect width="1200" height="900" fill="#181a1e"/>
+  <!-- telão com gráfico de barras -->
+  <rect x="240" y="80" width="720" height="420" fill="#f4f2ee"/>
+  <g fill="#181a1e">
+    <rect x="320" y="360" width="80" height="100"/>
+    <rect x="440" y="290" width="80" height="170"/>
+    <rect x="680" y="230" width="80" height="230"/>
+  </g>
+  <rect x="560" y="180" width="80" height="280" fill="#2f6fed"/>
+  <rect x="800" y="320" width="80" height="140" fill="#d9711c"/>
+  <path d="M300 470H900" stroke="#181a1e" stroke-width="4"/>
+  <text x="320" y="140" font-family="Ubuntu Mono, monospace" font-weight="700" font-size="40" fill="#181a1e">Dados &amp; IA</text>
+  <!-- palco e palestrante -->
+  <rect x="0" y="590" width="1200" height="30" fill="#2f6fed"/>
+  <circle cx="1030" cy="470" r="36" fill="#f4f2ee"/>
+  <path d="M980 590c0-70 22-90 50-90s50 20 50 90z" fill="#f4f2ee"/>
+  <!-- plateia -->
+  <g fill="#c9c9c4">
+    <circle cx="90" cy="720" r="40"/><circle cx="230" cy="740" r="40"/><circle cx="370" cy="715" r="40"/><circle cx="510" cy="740" r="40"/>
+    <circle cx="650" cy="720" r="40"/><circle cx="790" cy="742" r="40"/><circle cx="930" cy="718" r="40"/><circle cx="1070" cy="740" r="40"/>
+  </g>
+  <g fill="#5a5a56">
+    <circle cx="160" cy="850" r="44"/><circle cx="300" cy="860" r="44"/><circle cx="440" cy="848" r="44"/><circle cx="580" cy="862" r="44"/>
+    <circle cx="720" cy="850" r="44"/><circle cx="860" cy="860" r="44"/><circle cx="1000" cy="848" r="44"/>
+  </g>
+  <rect x="30" y="30" width="250" height="48" fill="#f4f2ee"/>
+  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#181a1e">FOTO DE EXEMPLO</text>
+</svg>
