@@ -1,6 +1,8 @@
 import { LinkIcon, MailIcon, PhoneIcon, type LucideIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Revelar } from '@/componentes/Revelar'
 import type { PerfilPublico } from '@/dados/landing'
+import type { Assunto } from '@/dominio/contato'
 import { FormularioDeContato } from './FormularioDeContato'
 
 type Canal = { icone: LucideIcon; rotulo: string; valor: string; href: string; externo: boolean }
@@ -41,7 +43,7 @@ function canaisDoPerfil(perfil: PerfilPublico): Canal[] {
 }
 
 /** Contato: cartões de canal e formulário (PRD, seção 5 — Landing). */
-export function Contato({ perfil }: { perfil: PerfilPublico }) {
+export function Contato({ perfil, assunto }: { perfil: PerfilPublico; assunto?: Assunto }) {
   const canais = canaisDoPerfil(perfil)
 
   return (
@@ -49,7 +51,7 @@ export function Contato({ perfil }: { perfil: PerfilPublico }) {
       {canais.length > 0 && (
         <ul className="flex flex-col gap-4">
           {canais.map((canal) => (
-            <li key={canal.href}>
+            <Revelar key={canal.href} como="li">
               <Card>
                 <CardContent className="flex items-center gap-4">
                   <canal.icone aria-hidden="true" className="size-5 shrink-0" />
@@ -65,13 +67,14 @@ export function Contato({ perfil }: { perfil: PerfilPublico }) {
                   </div>
                 </CardContent>
               </Card>
-            </li>
+            </Revelar>
           ))}
         </ul>
       )}
       <Card className={canais.length === 0 ? 'md:col-span-2' : undefined}>
         <CardContent>
-          <FormularioDeContato />
+          {/* A chave remonta o formulário quando uma frente de trabalho escolhe o assunto. */}
+          <FormularioDeContato key={assunto ?? ''} assuntoInicial={assunto} />
         </CardContent>
       </Card>
     </div>
