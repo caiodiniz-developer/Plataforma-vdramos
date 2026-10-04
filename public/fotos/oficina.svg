@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="t">
+  <title id="t">Ilustração de exemplo: oficina prática com notebooks e planilhas</title>
+  <rect width="1200" height="900" fill="#f4f2ee"/>
+  <!-- mesa -->
+  <rect x="0" y="560" width="1200" height="340" fill="#c9c9c4"/>
+  <path d="M0 560H1200" stroke="#181a1e" stroke-width="6"/>
+  <!-- notebook 1 com planilha -->
+  <g>
+    <rect x="120" y="230" width="430" height="290" fill="#181a1e"/>
+    <rect x="145" y="255" width="380" height="240" fill="#f4f2ee"/>
+    <g stroke="#c9c9c4" stroke-width="2">
+      <path d="M145 295H525M145 335H525M145 375H525M145 415H525M145 455H525"/>
+      <path d="M225 255V495M305 255V495M385 255V495M465 255V495"/>
+    </g>
+    <rect x="145" y="255" width="380" height="40" fill="#1f9d55"/>
+    <rect x="305" y="335" width="80" height="40" fill="none" stroke="#2f6fed" stroke-width="5"/>
+    <path d="M90 520H580L620 560H50z" fill="#181a1e"/>
+  </g>
+  <!-- notebook 2 com assistente de IA -->
+  <g>
+    <rect x="650" y="230" width="430" height="290" fill="#181a1e"/>
+    <rect x="675" y="255" width="380" height="240" fill="#22252a"/>
+    <rect x="700" y="285" width="240" height="44" fill="#8b5cf6"/>
+    <rect x="790" y="350" width="240" height="44" fill="#f4f2ee"/>
+    <rect x="700" y="415" width="200" height="44" fill="#8b5cf6"/>
+    <rect x="1000" y="445" width="30" height="30" fill="#d9711c"/>
+    <path d="M620 520H1110L1150 560H580z" fill="#181a1e"/>
+  </g>
+  <!-- caneca e caderno -->
+  <rect x="150" y="640" width="260" height="170" fill="#f4f2ee" stroke="#181a1e" stroke-width="6"/>
+  <path d="M180 690H380M180 730H350M180 770H310" stroke="#181a1e" stroke-width="5"/>
+  <rect x="860" y="630" width="110" height="140" fill="#2f6fed"/>
+  <path d="M970 660h30a30 30 0 0 1 0 60h-30" fill="none" stroke="#2f6fed" stroke-width="16"/>
+  <rect x="30" y="30" width="250" height="48" fill="#181a1e"/>
+  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#f4f2ee">FOTO DE EXEMPLO</text>
+</svg>
