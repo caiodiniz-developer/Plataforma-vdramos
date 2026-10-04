@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="t">
+  <title id="t">Ilustração de exemplo: painel de um projeto de dados</title>
+  <rect width="1200" height="900" fill="#181a1e"/>
+  <!-- cartões do painel -->
+  <g fill="#22252a" stroke="#f4f2ee" stroke-width="4">
+    <rect x="80" y="120" width="320" height="180"/>
+    <rect x="440" y="120" width="320" height="180"/>
+    <rect x="800" y="120" width="320" height="180"/>
+    <rect x="80" y="340" width="680" height="460"/>
+    <rect x="800" y="340" width="320" height="460"/>
+  </g>
+  <g font-family="Ubuntu Mono, monospace" font-weight="700" fill="#f4f2ee">
+    <text x="110" y="250" font-size="72">92%</text>
+    <text x="470" y="250" font-size="72">4,7</text>
+    <text x="830" y="250" font-size="72">+38</text>
+  </g>
+  <rect x="110" y="150" width="70" height="12" fill="#1f9d55"/>
+  <rect x="470" y="150" width="70" height="12" fill="#2f6fed"/>
+  <rect x="830" y="150" width="70" height="12" fill="#d9711c"/>
+  <!-- gráfico de linha -->
+  <g stroke="#3a3d44" stroke-width="2">
+    <path d="M120 440H720M120 540H720M120 640H720M120 740H720"/>
+  </g>
+  <polyline points="120,720 220,660 320,690 420,560 520,590 620,470 720,420" fill="none" stroke="#2f6fed" stroke-width="10" stroke-linejoin="round"/>
+  <polyline points="120,740 220,720 320,700 420,680 520,640 620,620 720,580" fill="none" stroke="#c9c9c4" stroke-width="6" stroke-dasharray="14 12"/>
+  <!-- barras horizontais -->
+  <g>
+    <rect x="830" y="400" width="250" height="40" fill="#8b5cf6"/>
+    <rect x="830" y="480" width="190" height="40" fill="#2f6fed"/>
+    <rect x="830" y="560" width="140" height="40" fill="#d9711c"/>
+    <rect x="830" y="640" width="210" height="40" fill="#1f9d55"/>
+    <rect x="830" y="720" width="90" height="40" fill="#c9c9c4"/>
+  </g>
+  <rect x="30" y="30" width="250" height="48" fill="#f4f2ee"/>
+  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#181a1e">FOTO DE EXEMPLO</text>
+</svg>
