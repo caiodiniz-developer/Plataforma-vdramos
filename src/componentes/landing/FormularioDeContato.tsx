@@ -38,9 +38,9 @@ function Erro({ id, mensagem }: { id: string; mensagem?: string }) {
 }
 
 /** PRD F2: formulário de contato com validação por campo e reenvio em falha. */
-export function FormularioDeContato() {
+export function FormularioDeContato({ assuntoInicial }: { assuntoInicial?: Assunto } = {}) {
   const id = useId()
-  const [formulario, setFormulario] = useState<FormularioContato>(VAZIO)
+  const [formulario, setFormulario] = useState<FormularioContato>(() => ({ ...VAZIO, assunto: assuntoInicial ?? '' }))
   const [erros, setErros] = useState<ErrosContato>({})
   const [enviando, setEnviando] = useState(false)
 
