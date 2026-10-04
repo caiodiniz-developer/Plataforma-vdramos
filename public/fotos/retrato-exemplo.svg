@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="t">
+  <title id="t">Retrato de exemplo — substituir pela foto do professor</title>
+  <rect width="900" height="1100" fill="#181a1e"/>
+  <!-- grade técnica de fundo -->
+  <g stroke="#2a2d33" stroke-width="2">
+    <path d="M0 150H900M0 300H900M0 450H900M0 600H900M0 750H900M0 900H900"/>
+    <path d="M150 0V1100M300 0V1100M450 0V1100M600 0V1100M750 0V1100"/>
+  </g>
+  <!-- silhueta -->
+  <circle cx="450" cy="430" r="170" fill="#f4f2ee"/>
+  <path d="M170 1100c0-210 125-370 280-370s280 160 280 370z" fill="#f4f2ee"/>
+  <path d="M370 730h160l-80 120z" fill="#2f6fed"/>
+  <!-- faixa das quatro cores -->
+  <g>
+    <rect x="0" y="1070" width="225" height="30" fill="#2f6fed"/>
+    <rect x="225" y="1070" width="225" height="30" fill="#d9711c"/>
+    <rect x="450" y="1070" width="225" height="30" fill="#8b5cf6"/>
+    <rect x="675" y="1070" width="225" height="30" fill="#1f9d55"/>
+  </g>
+  <!-- etiqueta -->
+  <rect x="40" y="40" width="300" height="56" fill="#f4f2ee"/>
+  <text x="62" y="77" font-family="Ubuntu, sans-serif" font-weight="700" font-size="22" letter-spacing="3" fill="#181a1e">FOTO DE EXEMPLO</text>
+</svg>
