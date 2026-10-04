@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
+import { LayoutAdmin } from '@/componentes/admin/LayoutAdmin'
 import { PortaoDoTermo } from '@/componentes/PortaoDoTermo'
 import { Toaster } from '@/components/ui/sonner'
 import { ProvedorDeSessao, RotaProtegida } from '@/contextos/Sessao'
@@ -10,6 +11,9 @@ const Entrar = lazy(() => import('@/paginas/aluno/Entrar'))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
 const AoVivo = lazy(() => import('@/paginas/aluno/AoVivo'))
 const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
+const EntrarAdmin = lazy(() => import('@/paginas/admin/Entrar'))
+const Painel = lazy(() => import('@/paginas/admin/Painel'))
+const MensagensDeContato = lazy(() => import('@/paginas/admin/MensagensDeContato'))
 const NaoEncontrada = lazy(() => import('@/paginas/NaoEncontrada'))
 
 /**
@@ -53,6 +57,18 @@ function App() {
                 </RotaProtegida>
               }
             />
+            <Route path="/admin/entrar" element={<EntrarAdmin />} />
+            <Route
+              path="/admin"
+              element={
+                <RotaProtegida papel="admin">
+                  <LayoutAdmin />
+                </RotaProtegida>
+              }
+            >
+              <Route index element={<Painel />} />
+              <Route path="mensagens" element={<MensagensDeContato />} />
+            </Route>
             <Route path="*" element={<NaoEncontrada />} />
           </Routes>
         </Suspense>
