@@ -8,6 +8,7 @@ import Landing from '@/paginas/Landing'
 const Privacidade = lazy(() => import('@/paginas/Privacidade'))
 const Entrar = lazy(() => import('@/paginas/aluno/Entrar'))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
+const AoVivo = lazy(() => import('@/paginas/aluno/AoVivo'))
 const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
 const NaoEncontrada = lazy(() => import('@/paginas/NaoEncontrada'))
 
@@ -30,6 +31,16 @@ function App() {
                 <RotaProtegida papel="aluno">
                   <PortaoDoTermo>
                     <Turma />
+                  </PortaoDoTermo>
+                </RotaProtegida>
+              }
+            />
+            <Route
+              path="/aluno/turmas/:codigo/ao-vivo"
+              element={
+                <RotaProtegida papel="aluno">
+                  <PortaoDoTermo>
+                    <AoVivo />
                   </PortaoDoTermo>
                 </RotaProtegida>
               }
