@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge'
+import { Revelar } from '@/componentes/Revelar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -24,8 +25,8 @@ type Props = {
 function LinhaDoTempo({ itens }: { itens: Experiencia[] }) {
   return (
     <ol className="relative ml-1.5 flex flex-col gap-6 border-l-2 pl-6 md:pl-8">
-      {itens.map((e) => (
-        <li key={e.id} className="relative">
+      {itens.map((e, i) => (
+        <Revelar key={e.id} como="li" atraso={Math.min(i, 3) * 100} className="relative">
           <span
             aria-hidden="true"
             className="absolute top-5 -left-[33px] size-3.5 border-2 bg-background md:-left-[41px]"
@@ -56,7 +57,7 @@ function LinhaDoTempo({ itens }: { itens: Experiencia[] }) {
               </CardContent>
             )}
           </Card>
-        </li>
+        </Revelar>
       ))}
     </ol>
   )
