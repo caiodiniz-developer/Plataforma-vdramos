@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { Revelar } from './Revelar'
 
 type Props = {
   id?: string
@@ -17,7 +18,7 @@ type Props = {
 export function Secao({ id, numero, titulo, children, className }: Props) {
   return (
     <section id={id} className={cn('mx-auto w-full max-w-[1080px] px-4 py-12 md:px-10 md:py-16', className)}>
-      <div className="mb-8 flex items-center gap-4 border-b-2 pb-4">
+      <Revelar className="mb-8 flex items-center gap-4 border-b-2 pb-4">
         {numero && (
           <span
             aria-hidden="true"
@@ -27,7 +28,7 @@ export function Secao({ id, numero, titulo, children, className }: Props) {
           </span>
         )}
         <h2 className="text-[28px] md:text-[36px]">{titulo}</h2>
-      </div>
+      </Revelar>
       {children}
     </section>
   )
