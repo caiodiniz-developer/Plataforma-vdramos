@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
+import { AtividadesDaTurma } from '@/componentes/turma/AtividadesDaTurma'
 import { Calendario } from '@/componentes/turma/Calendario'
 import { InformacoesDoCurso } from '@/componentes/turma/InformacoesDoCurso'
 import { Materiais } from '@/componentes/turma/Materiais'
@@ -146,6 +147,7 @@ export default function Turma() {
             <TabsTrigger value="calendario">Calendário</TabsTrigger>
             <TabsTrigger value="materiais">Materiais</TabsTrigger>
             <TabsTrigger value="curso">Curso</TabsTrigger>
+            <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
           <TabsContent value="calendario">
             <Calendario turma={turma} />
@@ -155,6 +157,9 @@ export default function Turma() {
           </TabsContent>
           <TabsContent value="curso">
             <InformacoesDoCurso turma={turma} />
+          </TabsContent>
+          <TabsContent value="atividades">
+            <AtividadesDaTurma turmaId={turma.id} />
           </TabsContent>
         </Tabs>
       </main>
