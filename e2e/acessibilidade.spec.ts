@@ -36,6 +36,27 @@ test.describe('acessibilidade (axe, WCAG 2.1 AA)', () => {
     await semViolacoes(page)
   })
 
+  test('landing no nível essencial (sistema com movimento reduzido)', async ({ browser }) => {
+    const contexto = await browser.newContext({ reducedMotion: 'reduce' })
+    const page = await contexto.newPage()
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('data-movimento', 'essencial')
+    await rolarAteOFim(page)
+    await semViolacoes(page)
+    await contexto.close()
+  })
+
+  test('landing com as animações desligadas', async ({ browser }) => {
+    const contexto = await browser.newContext()
+    await contexto.addInitScript(() => window.localStorage.setItem('vr:movimento', 'nenhum'))
+    const page = await contexto.newPage()
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await semViolacoes(page)
+    await contexto.close()
+  })
+
   test('privacidade', async ({ page }) => {
     await page.goto('/privacidade')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
