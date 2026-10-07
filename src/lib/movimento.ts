@@ -74,7 +74,7 @@ export function useMovimento(
         CONSULTAS,
         (contexto) => {
           const tela = contexto.conditions as Record<keyof typeof CONSULTAS, boolean>
-          return montar(
+          const limpar = montar(
             {
               completo: nivel === 'completo',
               essencial: nivel === 'essencial',
@@ -84,6 +84,14 @@ export function useMovimento(
             },
             q,
           )
+          return () => {
+            limpar?.()
+            // O GSAP desfaz estilos, não textos: devolve o texto de quem foi embaralhado.
+            q('[data-texto-original]').forEach((el) => {
+              el.textContent = el.dataset.textoOriginal ?? el.textContent
+              delete el.dataset.textoOriginal
+            })
+          }
         },
         raiz,
       )
@@ -99,6 +107,43 @@ export function useMovimento(
 export function entrada(condicoes: Pick<Condicoes, 'completo'>, cheio: { y?: number; duracao: number }) {
   if (condicoes.completo) return { y: cheio.y ?? 0, duration: cheio.duracao }
   return { y: Math.min(16, cheio.y ?? 0), duration: Math.min(0.6, cheio.duracao * 0.7) }
+}
+
+type Nivelado = Pick<Condicoes, 'completo'>
+
+/**
+ * Ponto de partida de letras e palavras de título. Completo: sobem de dentro
+ * da máscara da linha. Essencial: fade com deslocamento mínimo.
+ */
+export function deMascara(c: Nivelado): gsap.TweenVars {
+  return c.completo
+    ? { yPercent: 110, duration: 1.1, ease: 'expo.out' }
+    : { y: 10, opacity: 0, duration: 0.5, ease: 'power2.out' }
+}
+
+/** Ponto de partida de um bloco de conteúdo: sobe e aparece. */
+export function deBloco(c: Nivelado, y = 32): gsap.TweenVars {
+  return { opacity: 0, ease: c.completo ? 'power3.out' : 'power2.out', ...entrada(c, { y, duracao: 0.9 }) }
+}
+
+/** Ponto de partida de uma régua de 2 px que se desenha da esquerda para a direita. */
+export function deRegua(c: Nivelado): gsap.TweenVars {
+  return { scaleX: 0, duration: c.completo ? 1.2 : 0.7, ease: 'circ.out' }
+}
+
+/**
+ * Texto que se embaralha por um instante e assenta no valor final. Só para
+ * elementos decorativos (`aria-hidden`): o texto lido por leitor de tela fica
+ * em outro elemento, estável. Devolve o tween para entrar numa timeline.
+ */
+export function embaralhar(alvo: HTMLElement, c: Nivelado): gsap.core.Tween {
+  const texto = alvo.dataset.textoOriginal ?? alvo.textContent ?? ''
+  alvo.dataset.textoOriginal = texto
+  return gsap.to(alvo, {
+    duration: c.completo ? 0.9 : 0.5,
+    ease: 'none',
+    scrambleText: { text: texto, chars: CARACTERES_DO_EMBARALHADO, speed: 0.6 },
+  })
 }
 
 /** Estado aberto de um recorte retangular (destino dos reveals por `clip-path`). */
