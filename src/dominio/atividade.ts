@@ -64,7 +64,8 @@ export function problemasDaAtividade(atividade: AtividadeRascunho): string[] {
 
     const opcoes = item.opcoes.filter((o) => o.texto.trim() !== '')
     if (opcoes.length < 2) problemas.push(`Item ${n}: inclua ao menos duas opções.`)
-    if (atividade.tipo !== 'quiz') return
+    // Quiz e questão avulsa são corrigidos: precisam de gabarito.
+    if (atividade.tipo !== 'quiz' && atividade.tipo !== 'questao') return
 
     const corretas = opcoes.filter((o) => o.correta).length
     if (corretas === 0) problemas.push(`Item ${n}: marque a opção correta.`)

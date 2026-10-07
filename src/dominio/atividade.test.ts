@@ -56,6 +56,25 @@ describe('problemasDaAtividade', () => {
     expect(problemasDaAtividade(comBranco)).toContain('Item 1: inclua ao menos duas opções.')
   })
 
+  it('questão avulsa é corrigida: exige gabarito como o quiz', () => {
+    const semCorreta = {
+      ...quiz,
+      tipo: 'questao' as const,
+      itens: [{ ...quiz.itens[0], opcoes: quiz.itens[0].opcoes.map((o) => ({ ...o, correta: false })) }],
+    }
+    expect(problemasDaAtividade(semCorreta)).toContain('Item 1: marque a opção correta.')
+    expect(problemasDaAtividade({ ...quiz, tipo: 'questao' })).toEqual([])
+  })
+
+  it('lição aceita item de escolha sem gabarito', () => {
+    const semCorreta = {
+      ...quiz,
+      tipo: 'licao' as const,
+      itens: [{ ...quiz.itens[0], opcoes: quiz.itens[0].opcoes.map((o) => ({ ...o, correta: false })) }],
+    }
+    expect(problemasDaAtividade(semCorreta)).toEqual([])
+  })
+
   it('exige opção correta em quiz, mas não em enquete', () => {
     const semCorreta = {
       ...quiz,
