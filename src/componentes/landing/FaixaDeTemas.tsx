@@ -29,18 +29,16 @@ function Sequencia() {
  * Faixa em Tinta com os temas em letra grande. Decorativa (`aria-hidden`): os
  * mesmos temas aparecem como lista no hero.
  *
- * Movimento:
- *  - essencial: rola sozinha, devagar e em velocidade constante.
- *  - completo: acelera com a velocidade da rolagem, inverte o sentido quando a
- *    pessoa rola para cima e inclina de leve conforme a velocidade.
- * Fica parada fora da tela e no nível "nenhum".
+ * Movimento: rola sozinha, acelera com a velocidade da rolagem, inverte o
+ * sentido quando a pessoa rola para cima e inclina de leve conforme a
+ * velocidade. Fica parada fora da tela.
  */
 export function FaixaDeTemas() {
   const raiz = useRef<HTMLDivElement>(null)
 
-  useMovimento(raiz, (c, q) => {
+  useMovimento(raiz, (_condicoes, q) => {
     const trilho = q('[data-trilho]')
-    const laco = gsap.to(trilho, { xPercent: -50, ease: 'none', duration: c.completo ? 38 : 70, repeat: -1 })
+    const laco = gsap.to(trilho, { xPercent: -50, ease: 'none', duration: 38, repeat: -1 })
     // Começa longe do zero para poder andar para trás sem bater no início.
     laco.totalTime(laco.duration() * 50)
     const inclinar = gsap.quickTo(trilho, 'skewX', { duration: 0.5, ease: 'power3.out' })
@@ -51,7 +49,6 @@ export function FaixaDeTemas() {
       end: 'bottom top',
       onToggle: (self) => laco.paused(!self.isActive),
       onUpdate: (self) => {
-        if (!c.completo) return
         const velocidade = self.getVelocity()
         const sentido = velocidade < 0 ? -1 : 1
         const impulso = Math.min(7, Math.abs(velocidade) / 220)

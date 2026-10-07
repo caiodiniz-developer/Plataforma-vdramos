@@ -167,8 +167,8 @@
     scroll-padding-top: 5rem;
   }
 
-  /* Rolagem suave do CSS só no nível completo (e nunca junto com o Lenis). */
-  html[data-movimento='completo']:not([data-rolagem-suave]) {
+  /* Rolagem suave do CSS, nunca junto com o Lenis (que marca o <html> quando liga). */
+  html:not([data-rolagem-suave]) {
     scroll-behavior: smooth;
   }
 
@@ -213,33 +213,6 @@
     outline-offset: 2px;
   }
 
-  /*
-   * Nível de movimento (`src/lib/nivelDeMovimento.ts`), marcado no <html> antes
-   * da primeira pintura. Só o nível "nenhum" zera animações e transições: no
-   * "essencial" (padrão de quem pede movimento reduzido no sistema) hovers e
-   * transições de cor continuam.
-   */
-  html[data-movimento='nenhum'] {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-
-  /* Sem JavaScript o atributo não existe: aí vale o pedido do sistema. */
-  @media (prefers-reduced-motion: reduce) {
-    html:not([data-movimento]) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  }
 }
 
 @utility eyebrow {
@@ -266,8 +239,8 @@
 /*
  * Landing. O movimento é feito com GSAP (`src/lib/movimento.ts`), que aplica o
  * estado inicial de cada elemento: aqui só ficam medidas e microinterações em
- * CSS. Nada nasce escondido por CSS, então o conteúdo aparece mesmo sem
- * animação (e com `prefers-reduced-motion`, regra global em @layer base).
+ * CSS. Nada nasce escondido por CSS, então o conteúdo aparece mesmo se o
+ * JavaScript de animação não rodar.
  */
 
 /* Coluna da landing: até 1680 px, com calha lateral fluida. */
@@ -345,19 +318,17 @@
 
 /*
  * Painel que gruda abaixo do cabeçalho enquanto o seguinte sobe por cima
- * (frentes de trabalho). Só no nível completo, em telas largas e com altura
- * para o painel inteiro; fora disso os painéis seguem em sequência.
+ * (frentes de trabalho). Só em telas largas e com altura para o painel
+ * inteiro; fora disso os painéis seguem em sequência.
  */
 @utility painel-empilhado {
   @media (min-width: 1024px) and (min-height: 600px) {
-    html[data-movimento="completo"] & {
-      position: sticky;
-      top: 4rem;
-    }
+    position: sticky;
+    top: 4rem;
   }
 }
 
-/* Lenis (rolagem suave do nível completo): regras mínimas da biblioteca. */
+/* Lenis (rolagem suave da landing): regras mínimas da biblioteca. */
 html.lenis,
 html.lenis body {
   height: auto;

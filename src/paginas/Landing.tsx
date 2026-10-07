@@ -22,7 +22,6 @@ import type { Assunto } from '@/dominio/contato'
 import { abasVisiveis, type TipoExperiencia } from '@/dominio/experiencia'
 import { useConsulta } from '@/hooks/useConsulta'
 import { CONSULTAS, ScrollTrigger } from '@/lib/movimento'
-import { useNivelDeMovimento } from '@/lib/nivelDeMovimento'
 import { ALTURA_DO_CABECALHO, ligarRolagemSuave, rolagemSuaveAtiva, rolarAte } from '@/lib/rolagem'
 
 function Carregando() {
@@ -67,17 +66,16 @@ function useConteudoPronto(pronto: boolean) {
 }
 
 /**
- * Rolagem suave (Lenis) enquanto a landing está na tela: só no nível completo
- * e com ponteiro fino. Ao sair da rota, ou se a pessoa mudar o nível, desliga.
+ * Rolagem suave (Lenis) enquanto a landing está na tela, só com ponteiro fino
+ * (no toque a rolagem nativa já é a melhor). Ao sair da rota, desliga.
  */
 function useRolagemSuave() {
-  const nivel = useNivelDeMovimento()
   useEffect(() => {
-    if (nivel !== 'completo' || !window.matchMedia(CONSULTAS.ponteiroFino).matches) return
+    if (!window.matchMedia(CONSULTAS.ponteiroFino).matches) return
     const desligar = ligarRolagemSuave()
     ScrollTrigger.refresh()
     return desligar
-  }, [nivel])
+  }, [])
 }
 
 /**

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { CONSULTAS, gsap, SplitText, useGSAP } from '@/lib/movimento'
-import { nivelDeMovimento } from '@/lib/nivelDeMovimento'
 import {
   deveAbrir,
   DURACAO_DA_ABERTURA,
@@ -23,7 +22,7 @@ function guardaDaSessao(): Storage | undefined {
 }
 
 /**
- * Abertura da página (nível completo, primeira carga da sessão): cortina em
+ * Abertura da página (primeira carga da sessão): cortina em
  * Tinta com contador, o nome se montando e a faixa das quatro cores; em cerca
  * de 1,6 s ela sobe e entrega para o hero.
  *
@@ -35,7 +34,7 @@ export function Abertura() {
   const raiz = useRef<HTMLDivElement>(null)
   const [aberta, setAberta] = useState(
     // `matchMedia('all')` só casa em navegador de verdade: nos testes de tela não há abertura.
-    () => window.matchMedia(CONSULTAS.tela).matches && deveAbrir(nivelDeMovimento(), guardaDaSessao()),
+    () => window.matchMedia(CONSULTAS.tela).matches && deveAbrir(guardaDaSessao()),
   )
 
   // Rede de segurança: a cortina sai de qualquer jeito.

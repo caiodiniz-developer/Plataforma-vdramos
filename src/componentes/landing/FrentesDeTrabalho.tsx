@@ -49,13 +49,14 @@ type Props = { aoEscolher: (assunto: Assunto) => void }
  * inteiro é o link "Conversar sobre …".
  *
  * Movimento:
- *  - completo (telas largas): os painéis empilham — cada um gruda no topo
+ *  - em telas largas: os painéis empilham — cada um gruda no topo
  *    (`position: sticky`, classe `painel-empilhado`) e o seguinte sobe por
  *    cima, tomando a tela com a sua cor, enquanto o de baixo recua. É rolagem
  *    nativa: todo link continua alcançável, e o foco por teclado leva a página
  *    até o painel focado.
- *  - essencial e celular: painéis em sequência, sem grudar; título, régua e
- *    textos entram com fade curto.
+ *  - no celular: painéis em sequência, sem grudar.
+ * Em todos os tamanhos, a régua se desenha, as palavras do título sobem de
+ * dentro da linha e o número gigante sobe mais devagar que o painel.
  */
 export function FrentesDeTrabalho({ aoEscolher }: Props) {
   const raiz = useRef<HTMLUListElement>(null)
@@ -67,12 +68,11 @@ export function FrentesDeTrabalho({ aoEscolher }: Props) {
       const palavras = SplitText.create(dentro('h3'), { type: 'words', mask: 'words' })
       const linha = gsap
         .timeline({ scrollTrigger: { trigger: painel, start: 'top 75%' } })
-        .from(dentro('[data-regua]'), deRegua(c), 0)
-        .from(palavras.words, { ...deMascara(c), stagger: 0.08 }, 0.05)
-        .from(dentro('[data-apoio]'), { ...deBloco(c, 28), stagger: 0.08 }, 0.25)
-      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo, c), 0))
+        .from(dentro('[data-regua]'), deRegua(), 0)
+        .from(palavras.words, { ...deMascara(), stagger: 0.08 }, 0.05)
+        .from(dentro('[data-apoio]'), { ...deBloco(28), stagger: 0.08 }, 0.25)
+      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo), 0))
 
-      if (!c.completo) return
       // O número gigante sobe mais devagar que o painel.
       gsap.fromTo(
         dentro('[data-numero]'),

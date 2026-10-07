@@ -4,7 +4,6 @@ import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { SplitText } from 'gsap/SplitText'
 import type { RefObject } from 'react'
-import { useNivelDeMovimento } from './nivelDeMovimento'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText, ScrambleTextPlugin)
 
@@ -23,18 +22,11 @@ export const CONSULTAS = {
 } as const
 
 /**
- * O que cada componente recebe para decidir o que monta.
- *
- *  - `completo`: nível completo. Só aqui entram seção fixada, parallax, zoom,
- *    translações longas e tudo o que é preso à rolagem.
- *  - `essencial`: nível essencial. Fades, deslocamentos de até uns 16 px,
- *    recortes curtos e réguas que se desenham, com durações menores.
- *
- * No nível `nenhum` a montagem nem é chamada.
+ * O que cada componente recebe para decidir o que monta. São capacidades do
+ * aparelho, não preferências: seção fixada só em tela larga e alta; reações ao
+ * ponteiro, cursor e botões magnéticos só com ponteiro fino.
  */
 export type Condicoes = {
-  completo: boolean
-  essencial: boolean
   desktop: boolean
   alto: boolean
   ponteiroFino: boolean
@@ -47,8 +39,11 @@ export type Seletor = (seletor: string) => HTMLElement[]
  * Monta animações do GSAP dentro de `escopo` (os seletores em texto só
  * enxergam o que está dentro dele) e desfaz tudo — tweens, ScrollTriggers,
  * `pin-spacer` e textos divididos — quando o componente sai da tela, quando
- * uma das consultas muda, quando o nível de movimento muda ou quando uma
- * dependência muda.
+ * uma das consultas muda ou quando uma dependência muda.
+ *
+ * A landing sempre anima por inteiro: por decisão do dono do produto, ela não
+ * reduz o movimento a pedido do sistema (`prefers-reduced-motion`). Ver o
+ * bloco "Movimento" da Landing no PRD.
  *
  * O estado escondido de cada elemento é aplicado pelo próprio GSAP. Se este
  * código não rodar, nada fica invisível.
@@ -67,28 +62,17 @@ export function useMovimento(
   montar: (condicoes: Condicoes, q: Seletor) => void | (() => void),
   dependencias: unknown[] = [],
 ) {
-  const nivel = useNivelDeMovimento()
-
   useGSAP(
     () => {
       const raiz = escopo.current
-      if (!raiz || nivel === 'nenhum') return
+      if (!raiz) return
       const q: Seletor = (seletor) => Array.from(raiz.querySelectorAll<HTMLElement>(seletor))
       const mm = gsap.matchMedia()
       mm.add(
         CONSULTAS,
         (contexto) => {
           const tela = contexto.conditions as Record<keyof typeof CONSULTAS, boolean>
-          const limpar = montar(
-            {
-              completo: nivel === 'completo',
-              essencial: nivel === 'essencial',
-              desktop: tela.desktop,
-              alto: tela.alto,
-              ponteiroFino: tela.ponteiroFino,
-            },
-            q,
-          )
+          const limpar = montar({ desktop: tela.desktop, alto: tela.alto, ponteiroFino: tela.ponteiroFino }, q)
           return () => {
             limpar?.()
             // O GSAP desfaz estilos, não textos: devolve o texto de quem foi embaralhado.
@@ -101,39 +85,23 @@ export function useMovimento(
         raiz,
       )
     },
-    { scope: escopo, dependencies: [nivel, ...dependencias], revertOnUpdate: true },
+    { scope: escopo, dependencies: dependencias, revertOnUpdate: true },
   )
 }
 
-/**
- * Medidas de uma entrada conforme o nível: no completo o elemento percorre a
- * distância cheia; no essencial, no máximo 16 px e em menos tempo.
- */
-export function entrada(condicoes: Pick<Condicoes, 'completo'>, cheio: { y?: number; duracao: number }) {
-  if (condicoes.completo) return { y: cheio.y ?? 0, duration: cheio.duracao }
-  return { y: Math.min(16, cheio.y ?? 0), duration: Math.min(0.6, cheio.duracao * 0.7) }
+/** Ponto de partida de letras e palavras de título: sobem de dentro da máscara da linha. */
+export function deMascara(): gsap.TweenVars {
+  return { yPercent: 110, duration: 1.1, ease: 'expo.out' }
 }
 
-type Nivelado = Pick<Condicoes, 'completo'>
-
-/**
- * Ponto de partida de letras e palavras de título. Completo: sobem de dentro
- * da máscara da linha. Essencial: fade com deslocamento mínimo.
- */
-export function deMascara(c: Nivelado): gsap.TweenVars {
-  return c.completo
-    ? { yPercent: 110, duration: 1.1, ease: 'expo.out' }
-    : { y: 10, opacity: 0, duration: 0.5, ease: 'power2.out' }
-}
-
-/** Ponto de partida de um bloco de conteúdo: sobe e aparece. */
-export function deBloco(c: Nivelado, y = 32): gsap.TweenVars {
-  return { opacity: 0, ease: c.completo ? 'power3.out' : 'power2.out', ...entrada(c, { y, duracao: 0.9 }) }
+/** Ponto de partida de um bloco de conteúdo: sobe `y` px e aparece. */
+export function deBloco(y = 32): gsap.TweenVars {
+  return { y, opacity: 0, duration: 0.9, ease: 'power3.out' }
 }
 
 /** Ponto de partida de uma régua de 2 px que se desenha da esquerda para a direita. */
-export function deRegua(c: Nivelado): gsap.TweenVars {
-  return { scaleX: 0, duration: c.completo ? 1.2 : 0.7, ease: 'circ.out' }
+export function deRegua(): gsap.TweenVars {
+  return { scaleX: 0, duration: 1.2, ease: 'circ.out' }
 }
 
 /**
@@ -141,11 +109,11 @@ export function deRegua(c: Nivelado): gsap.TweenVars {
  * elementos decorativos (`aria-hidden`): o texto lido por leitor de tela fica
  * em outro elemento, estável. Devolve o tween para entrar numa timeline.
  */
-export function embaralhar(alvo: HTMLElement, c: Nivelado): gsap.core.Tween {
+export function embaralhar(alvo: HTMLElement): gsap.core.Tween {
   const texto = alvo.dataset.textoOriginal ?? alvo.textContent ?? ''
   alvo.dataset.textoOriginal = texto
   return gsap.to(alvo, {
-    duration: c.completo ? 0.9 : 0.5,
+    duration: 0.9,
     ease: 'none',
     scrambleText: { text: texto, chars: CARACTERES_DO_EMBARALHADO, speed: 0.6 },
   })

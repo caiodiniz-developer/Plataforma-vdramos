@@ -15,7 +15,6 @@ import {
   SplitText,
   useMovimento,
 } from '@/lib/movimento'
-import { escolherNivel, useNivelDeMovimento, useNivelFoiEscolhido } from '@/lib/nivelDeMovimento'
 import { tempoRestanteDaAbertura } from './aberturaDaPagina'
 import { escalaDoNome } from './escalaDoNome'
 
@@ -36,13 +35,12 @@ const CORES_DA_FAIXA = ['bg-primary', 'bg-orange', 'bg-violet', 'bg-green']
  * Hero: o nome ocupa a largura da página em Ubuntu Mono; abaixo, a faixa das
  * quatro cores, a bio, os botões, os temas e o retrato.
  *
- * Movimento:
- *  - essencial: letras do nome com fade curto, régua e faixa se desenhando,
- *    blocos com fade e deslocamento mínimo, retrato abrindo por recorte.
- *  - completo: as letras sobem de dentro da linha, o retrato assenta com zoom,
- *    e depois da entrada o hero reage ao ponteiro (a grade desliza, o retrato
- *    inclina, a faixa de cores cresce sob o ponteiro, os botões são
- *    magnéticos). Ao rolar, grade, nome e retrato saem em velocidades diferentes.
+ * Movimento: as letras do nome sobem de dentro da linha, a régua e a faixa de
+ * cores se desenham, o retrato abre por recorte e assenta com zoom. Ao rolar,
+ * a grade sai mais devagar que a página e, em telas largas, o nome e o retrato
+ * saem em velocidades diferentes. Com ponteiro fino, o hero reage ao ponteiro
+ * depois da entrada: a grade desliza, o retrato inclina, a cor da faixa sob o
+ * ponteiro cresce e os botões são magnéticos.
  */
 export function Hero({ perfil }: Props) {
   const raiz = useRef<HTMLElement>(null)
@@ -50,10 +48,6 @@ export function Hero({ perfil }: Props) {
   const retrato = foto ?? RETRATO.arquivo
   const ehExemplo = !foto && RETRATO.exemplo
   const escala = escalaDoNome(perfil.nome_exibicao)
-  // O sistema pediu menos movimento e a pessoa ainda não escolheu: oferece o nível completo logo no topo.
-  const nivel = useNivelDeMovimento()
-  const escolhido = useNivelFoiEscolhido()
-  const ofereceCompleto = nivel === 'essencial' && !escolhido
 
   useMovimento(raiz, (c, q) => {
     const secao = raiz.current
@@ -63,21 +57,20 @@ export function Hero({ perfil }: Props) {
     // Espera a abertura da página terminar para o hero entrar à vista.
     const linha = gsap
       .timeline({ delay: tempoRestanteDaAbertura() })
-      .from(q('[data-regua]'), deRegua(c), 0)
-      .from(q('[data-topo]'), { ...deBloco(c, 16), stagger: 0.08 }, 0.05)
-      .from(nome.chars, { ...deMascara(c), stagger: c.completo ? 0.035 : 0.02 }, 0.1)
-      .from(q('[data-cor]'), { scaleX: 0, duration: c.completo ? 0.9 : 0.6, ease: 'circ.out', stagger: 0.09 }, 0.5)
-      .from(q('[data-bio]'), deBloco(c, 28), 0.65)
-      .from(q('[data-entra]'), { ...deBloco(c, 24), stagger: 0.06 }, 0.8)
+      .from(q('[data-regua]'), deRegua(), 0)
+      .from(q('[data-topo]'), { ...deBloco(16), stagger: 0.08 }, 0.05)
+      .from(nome.chars, { ...deMascara(), stagger: 0.035 }, 0.1)
+      .from(q('[data-cor]'), { scaleX: 0, duration: 0.9, ease: 'circ.out', stagger: 0.09 }, 0.5)
+      .from(q('[data-bio]'), deBloco(28), 0.65)
+      .from(q('[data-entra]'), { ...deBloco(24), stagger: 0.06 }, 0.8)
       .fromTo(
         q('[data-moldura]'),
         { clipPath: 'inset(100% 0% 0% 0%)' },
-        { clipPath: RECORTE_ABERTO, duration: c.completo ? 1.3 : 0.7, ease: 'power3.inOut' },
+        { clipPath: RECORTE_ABERTO, duration: 1.3, ease: 'power3.inOut' },
         0.5,
       )
-    q('[data-embaralha]').forEach((alvo, i) => linha.add(embaralhar(alvo, c), 0.9 + i * 0.06))
+    q('[data-embaralha]').forEach((alvo, i) => linha.add(embaralhar(alvo), 0.9 + i * 0.06))
 
-    if (!c.completo) return
 
     linha.from(q('[data-retrato]'), { scale: 1.25, duration: 1.6, ease: 'power2.out' }, 0.5)
 
@@ -147,17 +140,6 @@ export function Hero({ perfil }: Props) {
             {perfil.cidade && <span> · {perfil.cidade}</span>}
           </p>
           <span aria-hidden="true" data-regua className="h-0.5 min-w-10 flex-1 origin-left bg-foreground" />
-          {ofereceCompleto && (
-            <button
-              type="button"
-              data-topo
-              onClick={() => escolherNivel('completo')}
-              className="eyebrow inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 border-2 px-3 transition-colors hover:bg-foreground hover:text-background"
-            >
-              <span aria-hidden="true" className="size-2 bg-primary" />
-              Ligar animações completas
-            </button>
-          )}
           <a
             data-topo
             data-cursor="Rolar"

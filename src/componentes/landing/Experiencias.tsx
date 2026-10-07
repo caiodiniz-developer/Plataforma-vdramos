@@ -65,7 +65,7 @@ function Linhas({ itens }: { itens: Experiencia[] }) {
 /**
  * PRD F1: experiência em abas Profissional | Docência; aba vazia não aparece.
  *
- * Movimento (completo e essencial): a régua de cada linha se desenha e o
+ * Movimento: a régua de cada linha se desenha e o
  * conteúdo entra quando a linha chega à tela. Ao trocar de aba, as animações
  * são refeitas para a nova lista e as seções seguintes são remedidas.
  */
@@ -77,13 +77,13 @@ export function Experiencias({ experiencias, aba, aoTrocarAba }: Props) {
 
   useMovimento(
     raiz,
-    (c, q) => {
+    (_condicoes, q) => {
       q('[data-experiencia]').forEach((linha) => {
         const dentro = (seletor: string) => Array.from(linha.querySelectorAll<HTMLElement>(seletor))
         gsap
           .timeline({ scrollTrigger: { trigger: linha, start: 'top 88%' } })
-          .from(dentro('[data-regua]'), deRegua(c), 0)
-          .from(dentro('[data-conteudo]'), deBloco(c, 32), 0.1)
+          .from(dentro('[data-regua]'), deRegua(), 0)
+          .from(dentro('[data-conteudo]'), deBloco(32), 0.1)
       })
       // A altura da seção muda com a aba: quem vem depois precisa se remedir.
       if (abaMontada.current !== ativa) ScrollTrigger.refresh()

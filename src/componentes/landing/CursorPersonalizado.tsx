@@ -5,7 +5,7 @@ import { gsap, useMovimento } from '@/lib/movimento'
 const CAMPOS = 'input, textarea, select, [role="combobox"], [role="listbox"], [contenteditable="true"]'
 
 /**
- * Cursor decorativo (nível completo, ponteiro fino): um quadrado pequeno que
+ * Cursor decorativo (só com ponteiro fino): um quadrado pequeno que
  * segue o ponteiro com atraso e, sobre elementos marcados com `data-cursor`,
  * abre uma etiqueta curta ("Ver", "Abrir", "Conversar").
  *
@@ -17,7 +17,7 @@ export function CursorPersonalizado() {
 
   useMovimento(raiz, (c, q) => {
     const caixa = raiz.current
-    if (!c.completo || !c.ponteiroFino || !caixa) return
+    if (!c.ponteiroFino || !caixa) return
     const [ponto] = q('[data-ponto]')
     const [etiqueta] = q('[data-etiqueta]')
     const [texto] = q('[data-texto]')

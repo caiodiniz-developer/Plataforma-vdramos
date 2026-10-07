@@ -22,11 +22,9 @@ const PARALLAX = [0, -110, -50, -140, 0]
  * Galeria editorial. As fotos vêm de `src/conteudo/galeria.ts`; enquanto forem
  * ilustrações provisórias, aparecem com a etiqueta "Foto de exemplo".
  *
- * Movimento:
- *  - essencial: a moldura abre por recorte curto e a legenda entra com fade.
- *  - completo: a imagem assenta com zoom enquanto a moldura abre, as colunas
- *    deslizam em velocidades diferentes e as molduras inclinam de leve com a
- *    velocidade da rolagem.
+ * Movimento: a moldura abre por recorte enquanto a imagem assenta com zoom, a
+ * legenda entra em seguida, as molduras inclinam de leve com a velocidade da
+ * rolagem e, em telas largas, as colunas deslizam em velocidades diferentes.
  * No hover (CSS): a faixa azul da base recua, a legenda desliza.
  */
 export function Galeria({ fotos }: { fotos: Foto[] }) {
@@ -39,15 +37,14 @@ export function Galeria({ fotos }: { fotos: Foto[] }) {
         .timeline({ scrollTrigger: { trigger: item, start: 'top 85%' } })
         .fromTo(
           dentro('[data-moldura]'),
-          { clipPath: c.completo ? 'inset(100% 0% 0% 0%)' : 'inset(14% 0% 0% 0%)', opacity: c.completo ? 1 : 0 },
-          { clipPath: RECORTE_ABERTO, opacity: 1, duration: c.completo ? 1.3 : 0.7, ease: 'power3.inOut' },
+          { clipPath: 'inset(100% 0% 0% 0%)' },
+          { clipPath: RECORTE_ABERTO, duration: 1.3, ease: 'power3.inOut' },
           0,
         )
-        .from(dentro('[data-regua]'), deRegua(c), c.completo ? 0.5 : 0.2)
-        .from(dentro('figcaption'), deBloco(c, 16), c.completo ? 0.6 : 0.25)
-      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo, c), c.completo ? 0.6 : 0.25))
+        .from(dentro('[data-regua]'), deRegua(), 0.5)
+        .from(dentro('figcaption'), deBloco(16), 0.6)
+      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo), 0.6))
 
-      if (!c.completo) return
       linha.from(dentro('[data-imagem]'), { scale: 1.3, duration: 1.6, ease: 'power2.out' }, 0)
 
       const deslocamento = PARALLAX[i % PARALLAX.length]
@@ -60,7 +57,6 @@ export function Galeria({ fotos }: { fotos: Foto[] }) {
       }
     })
 
-    if (!c.completo) return
     // Inclinação leve conforme a velocidade da rolagem; volta a zero quando ela para.
     const inclinar = gsap.quickTo(q('[data-inclina]'), 'skewY', { duration: 0.6, ease: 'power3.out' })
     ScrollTrigger.create({

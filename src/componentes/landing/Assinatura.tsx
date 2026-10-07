@@ -10,10 +10,10 @@ import { deMascara, gsap, SplitText, useMovimento } from '@/lib/movimento'
 export function Assinatura({ nome }: { nome: string }) {
   const raiz = useRef<HTMLParagraphElement>(null)
 
-  useMovimento(raiz, (c) => {
+  useMovimento(raiz, () => {
     const letras = SplitText.create(raiz.current, { type: 'chars', mask: 'chars', aria: 'none' })
     gsap.from(letras.chars, {
-      ...deMascara(c),
+      ...deMascara(),
       stagger: 0.03,
       scrollTrigger: { trigger: raiz.current, start: 'top 95%' },
     })

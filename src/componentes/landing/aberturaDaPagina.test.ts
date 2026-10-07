@@ -17,17 +17,15 @@ function guardaEmMemoria() {
 }
 
 describe('deveAbrir', () => {
-  it('abre só no nível completo', () => {
-    expect(deveAbrir('completo', guardaEmMemoria())).toBe(true)
-    expect(deveAbrir('essencial', guardaEmMemoria())).toBe(false)
-    expect(deveAbrir('nenhum', guardaEmMemoria())).toBe(false)
+  it('abre na primeira carga da sessão', () => {
+    expect(deveAbrir(guardaEmMemoria())).toBe(true)
   })
 
   it('não repete na mesma sessão', () => {
     const guarda = guardaEmMemoria()
     marcarAberturaVista(guarda)
     expect(guarda.getItem(CHAVE_DA_ABERTURA)).toBe('1')
-    expect(deveAbrir('completo', guarda)).toBe(false)
+    expect(deveAbrir(guarda)).toBe(false)
   })
 
   it('sem armazenamento, não abre (para não repetir a cada tela)', () => {
@@ -39,7 +37,7 @@ describe('deveAbrir', () => {
         throw new Error('bloqueado')
       },
     }
-    expect(deveAbrir('completo', bloqueada)).toBe(false)
+    expect(deveAbrir(bloqueada)).toBe(false)
     expect(() => marcarAberturaVista(bloqueada)).not.toThrow()
   })
 })

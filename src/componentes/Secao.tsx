@@ -15,22 +15,21 @@ type PropsDoCabecalho = {
  * O número vai em azul só porque é texto grande (≥ 24 px bold); azul em texto
  * pequeno não passa em AA.
  *
- * Movimento: o número se embaralha e assenta, as palavras do título entram
- * (subindo de dentro da linha no nível completo; com fade curto no essencial)
- * e a régua se desenha da esquerda para a direita.
+ * Movimento: o número se embaralha e assenta, as palavras do título sobem de
+ * dentro da linha e a régua se desenha da esquerda para a direita.
  */
 export function CabecalhoDeSecao({ numero, titulo, tamanho = 'grande', className }: PropsDoCabecalho) {
   const raiz = useRef<HTMLElement>(null)
 
-  useMovimento(raiz, (c, q) => {
+  useMovimento(raiz, (_condicoes, q) => {
     // O SplitText põe `aria-label` no h2 e `aria-hidden` nos pedaços: o
     // leitor de tela continua lendo o título inteiro.
     const palavras = SplitText.create(q('h2'), { type: 'words', mask: 'words' })
     const linha = gsap
       .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 82%' } })
-      .from(palavras.words, { ...deMascara(c), stagger: 0.07 })
-      .from(q('[data-regua]'), deRegua(c), 0.1)
-    q('[data-numero]').forEach((alvo) => linha.add(embaralhar(alvo, c), 0))
+      .from(palavras.words, { ...deMascara(), stagger: 0.07 })
+      .from(q('[data-regua]'), deRegua(), 0.1)
+    q('[data-numero]').forEach((alvo) => linha.add(embaralhar(alvo), 0))
   })
 
   return (

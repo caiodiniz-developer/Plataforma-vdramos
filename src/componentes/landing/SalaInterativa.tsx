@@ -218,20 +218,20 @@ function PassosDaAula() {
  * Seção em Tinta que apresenta a sala de aula interativa e leva à área do aluno.
  *
  * Movimento — a aula passa na prévia:
- *  - completo, em telas largas e altas: a seção fica fixa e a rolagem conduz a
- *    aula. A régua do encontro se preenche bloco a bloco, o relógio anda de
- *    18:45 a 22:45 e a pergunta, o quiz e os materiais entram no momento em
- *    que cada recurso é usado. Rolar para cima retrocede.
- *  - essencial (e telas menores): nada é fixado. A mesma sequência toca
- *    sozinha, uma vez, quando a prévia entra na tela.
- * A seção entra por recorte preso à rolagem (só no completo) e os passos de
- * "Como é uma aula" aparecem um a um.
+ *  - em telas largas e altas: a seção fica fixa e a rolagem conduz a aula. A
+ *    régua do encontro se preenche bloco a bloco, o relógio anda de 18:45 a
+ *    22:45 e a pergunta, o quiz e os materiais entram no momento em que cada
+ *    recurso é usado. Rolar para cima retrocede.
+ *  - em telas menores (celular, janelas baixas): nada é fixado. A mesma
+ *    sequência toca sozinha, uma vez, quando a prévia entra na tela.
+ * A seção entra por recorte preso à rolagem e os passos de "Como é uma aula"
+ * aparecem um a um.
  */
 export function SalaInterativa({ numero }: { numero?: string }) {
   const raiz = useRef<HTMLElement>(null)
 
   useMovimento(raiz, (c, q) => {
-    const fixa = c.completo && c.desktop && c.alto
+    const fixa = c.desktop && c.alto
     const [relogio] = q('[data-relogio]')
     const [agora] = q('[data-agora]')
     const [votos] = q('[data-votos]')
@@ -241,18 +241,16 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     // que conta; sem scrub, `timeScale` acerta a duração real.
     const DURACAO = 10
 
-    if (c.completo) {
-      // Troca Papel → Tinta por recorte, presa à rolagem.
-      gsap.fromTo(
-        raiz.current,
-        { clipPath: 'inset(0% 6% 0% 6%)' },
-        {
-          clipPath: RECORTE_ABERTO,
-          ease: 'none',
-          scrollTrigger: { trigger: raiz.current, start: 'top bottom', end: 'top 25%', scrub: true },
-        },
-      )
-    }
+    // Troca Papel → Tinta por recorte, presa à rolagem.
+    gsap.fromTo(
+      raiz.current,
+      { clipPath: 'inset(0% 6% 0% 6%)' },
+      {
+        clipPath: RECORTE_ABERTO,
+        ease: 'none',
+        scrollTrigger: { trigger: raiz.current, start: 'top bottom', end: 'top 25%', scrub: true },
+      },
+    )
 
     const mostrar = (progresso: number) => {
       const momento = momentoDaAula(BLOCOS_DEMO, progresso)
@@ -294,7 +292,7 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     })
 
     const entrada = (recurso: number) => RECURSOS[recurso].entrada * DURACAO
-    const fechado = { clipPath: 'inset(0% 0% 100% 0%)', y: c.completo ? 20 : 8 }
+    const fechado = { clipPath: 'inset(0% 0% 100% 0%)', y: 20 }
     const aberto = { clipPath: RECORTE_ABERTO, y: 0, duration: 0.9 }
     linha
       .fromTo(q('[data-cartao="pergunta"]'), fechado, aberto, entrada(1))
@@ -307,7 +305,7 @@ export function SalaInterativa({ numero }: { numero?: string }) {
       .fromTo(q('[data-barra]'), { scaleX: 0 }, { scaleX: 1, duration: 1.2, stagger: 0.2 }, entrada(2) + 0.5)
       .fromTo(q('[data-cartao="materiais"]'), fechado, aberto, entrada(3))
 
-    if (!fixa) linha.timeScale(DURACAO / (c.completo ? 3.5 : 3))
+    if (!fixa) linha.timeScale(DURACAO / (3.5))
     mostrar(0)
     votos.textContent = '+0'
 
@@ -315,18 +313,18 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     const titulo = SplitText.create(q('[data-passos] h3'), { type: 'words', mask: 'words' })
     gsap
       .timeline({ scrollTrigger: { trigger: q('[data-passos]'), start: 'top 80%' } })
-      .from(titulo.words, { ...deMascara(c), stagger: 0.06 }, 0)
-      .from(q('[data-regua-passos]'), deRegua(c), 0.1)
+      .from(titulo.words, { ...deMascara(), stagger: 0.06 }, 0)
+      .from(q('[data-regua-passos]'), deRegua(), 0.1)
     q('[data-passo]').forEach((passo, i) => {
       const dentro = (seletor: string) => Array.from(passo.querySelectorAll<HTMLElement>(seletor))
       const entradaDoPasso = gsap
         .timeline({ scrollTrigger: { trigger: passo, start: 'top 88%' }, delay: c.desktop ? i * 0.1 : 0 })
-        .from(dentro('[data-barra-passo]'), { scaleX: 0, duration: c.completo ? 0.9 : 0.6, ease: 'circ.out' }, 0)
-        .from(dentro('h4, p'), { ...deBloco(c, 24), stagger: 0.08 }, 0.15)
-      dentro('[data-embaralha]').forEach((alvo) => entradaDoPasso.add(embaralhar(alvo, c), 0.1))
+        .from(dentro('[data-barra-passo]'), { scaleX: 0, duration: 0.9, ease: 'circ.out' }, 0)
+        .from(dentro('h4, p'), { ...deBloco(24), stagger: 0.08 }, 0.15)
+      dentro('[data-embaralha]').forEach((alvo) => entradaDoPasso.add(embaralhar(alvo), 0.1))
     })
 
-    const desligarMagnetismo = c.completo && c.ponteiroFino ? magnetizar(q('[data-magnetico]')) : undefined
+    const desligarMagnetismo = c.ponteiroFino ? magnetizar(q('[data-magnetico]')) : undefined
 
     // O GSAP desfaz estilos, mas não textos: devolve o estado final escrito.
     return () => {

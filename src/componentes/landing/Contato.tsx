@@ -51,16 +51,16 @@ export function Contato({ perfil, assunto }: { perfil: PerfilPublico; assunto?: 
   const raiz = useRef<HTMLDivElement>(null)
   const canais = canaisDoPerfil(perfil)
 
-  useMovimento(raiz, (c, q) => {
+  useMovimento(raiz, (_condicoes, q) => {
     gsap
       .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 85%' } })
-      .from(q('[data-regua]'), { ...deRegua(c), stagger: 0.08 }, 0)
-      .from(q('[data-apoio]'), { ...deBloco(c, 20), stagger: 0.06 }, 0)
+      .from(q('[data-regua]'), { ...deRegua(), stagger: 0.08 }, 0)
+      .from(q('[data-apoio]'), { ...deBloco(20), stagger: 0.06 }, 0)
       .fromTo(
         q('[data-moldura]'),
-        { clipPath: c.completo ? 'inset(0% 0% 100% 0%)' : 'inset(0% 0% 12% 0%)', opacity: c.completo ? 1 : 0 },
+        { clipPath: 'inset(0% 0% 100% 0%)' },
         // Depois de aberto, o recorte sai: o anel de foco dos campos não pode ser cortado.
-        { clipPath: RECORTE_ABERTO, opacity: 1, duration: c.completo ? 0.8 : 0.5, ease: 'power3.out', clearProps: 'clipPath,opacity' },
+        { clipPath: RECORTE_ABERTO, duration: 0.8, ease: 'power3.out', clearProps: 'clipPath' },
         0,
       )
   })

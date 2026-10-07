@@ -9,37 +9,33 @@ import { deBloco, deMascara, deRegua, gsap, RECORTE_ABERTO, SplitText, useMovime
  * Chamada final de tela cheia em azul. Texto branco sobre o azul (4,55:1);
  * botões em Tinta e em contorno branco.
  *
- * Movimento:
- *  - essencial: régua se desenhando, palavras do título com fade curto e os
- *    blocos de apoio entrando.
- *  - completo: o painel azul abre por recorte preso à rolagem (a troca Papel →
- *    azul não é um corte seco), as palavras sobem de dentro da linha e os
- *    botões são magnéticos.
+ * Movimento: o painel azul abre por recorte preso à rolagem (a troca Papel →
+ * azul não é um corte seco), a régua se desenha, as palavras do título sobem
+ * de dentro da linha e, com ponteiro fino, os botões são magnéticos.
  */
 export function ChamadaFinal() {
   const raiz = useRef<HTMLElement>(null)
 
   useMovimento(raiz, (c, q) => {
-    if (c.completo) {
-      gsap.fromTo(
-        raiz.current,
-        { clipPath: 'inset(0% 7% 0% 7%)' },
-        {
-          clipPath: RECORTE_ABERTO,
-          ease: 'none',
-          scrollTrigger: { trigger: raiz.current, start: 'top bottom', end: 'top 15%', scrub: true },
-        },
-      )
-    }
+    // Troca Papel → azul por recorte, presa à rolagem.
+    gsap.fromTo(
+      raiz.current,
+      { clipPath: 'inset(0% 7% 0% 7%)' },
+      {
+        clipPath: RECORTE_ABERTO,
+        ease: 'none',
+        scrollTrigger: { trigger: raiz.current, start: 'top bottom', end: 'top 15%', scrub: true },
+      },
+    )
 
     const palavras = SplitText.create(q('h2'), { type: 'words', mask: 'words' })
     gsap
       .timeline({ scrollTrigger: { trigger: q('h2'), start: 'top 80%' } })
-      .from(q('[data-regua]'), deRegua(c), 0)
-      .from(palavras.words, { ...deMascara(c), stagger: c.completo ? 0.06 : 0.04 }, 0)
-      .from(q('[data-apoio]'), { ...deBloco(c, 28), stagger: 0.08 }, c.completo ? 0.5 : 0.25)
+      .from(q('[data-regua]'), deRegua(), 0)
+      .from(palavras.words, { ...deMascara(), stagger: 0.06 }, 0)
+      .from(q('[data-apoio]'), { ...deBloco(28), stagger: 0.08 }, 0.5)
 
-    if (c.completo && c.ponteiroFino) return magnetizar(q('[data-magnetico]'))
+    if (c.ponteiroFino) return magnetizar(q('[data-magnetico]'))
   })
 
   return (

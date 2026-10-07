@@ -2,7 +2,7 @@ import Lenis from 'lenis'
 import { gsap, ScrollTrigger } from './movimento'
 
 /**
- * Rolagem suave (Lenis), ligada só no nível completo e com ponteiro fino. O
+ * Rolagem suave (Lenis), ligada só com ponteiro fino. O
  * Lenis suaviza a roda do mouse e continua usando a rolagem da própria janela:
  * teclado, foco, barra de rolagem e toque seguem nativos.
  *

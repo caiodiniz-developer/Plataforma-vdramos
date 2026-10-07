@@ -1,8 +1,6 @@
-import type { Nivel } from '@/lib/nivelDeMovimento'
-
 /**
  * Abertura da página: uma cortina curta em Tinta, com um contador e o nome,
- * que entrega para o hero. Só no nível completo e só na primeira carga da
+ * que entrega para o hero. Só na primeira carga da
  * sessão (voltar para a landing pela navegação não repete).
  */
 export const CHAVE_DA_ABERTURA = 'vr:abertura-vista'
@@ -12,8 +10,7 @@ export const DURACAO_DA_ABERTURA = 1.6
 
 type Guarda = Pick<Storage, 'getItem' | 'setItem'>
 
-export function deveAbrir(nivel: Nivel, guarda: Guarda | undefined): boolean {
-  if (nivel !== 'completo') return false
+export function deveAbrir(guarda: Guarda | undefined): boolean {
   try {
     return guarda?.getItem(CHAVE_DA_ABERTURA) !== '1'
   } catch {
