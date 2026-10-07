@@ -3,34 +3,29 @@ import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { DadosDeCadastro, EtapaDeAcesso, IdsDeAcesso } from '@/dados/acesso'
+import type { IdsDeAcesso } from '@/dados/acesso'
 import Entrar from './Entrar'
 
-const verificarIds = vi.fn<(ids: IdsDeAcesso) => Promise<EtapaDeAcesso>>()
-const cadastrar = vi.fn<(ids: IdsDeAcesso, dados: DadosDeCadastro) => Promise<EtapaDeAcesso>>()
-const confirmarCodigo = vi.fn<(ids: IdsDeAcesso, codigo: string) => Promise<string>>()
+const entrar = vi.fn<(ids: IdsDeAcesso, valor: string) => Promise<string>>()
+const cadastrar = vi.fn<(ids: IdsDeAcesso, dados: Record<string, unknown>) => Promise<string>>()
 
 vi.mock('@/dados/acesso', () => ({
-  verificarIds: (ids: IdsDeAcesso) => verificarIds(ids),
-  cadastrar: (ids: IdsDeAcesso, dados: DadosDeCadastro) => cadastrar(ids, dados),
-  confirmarCodigo: (ids: IdsDeAcesso, codigo: string) => confirmarCodigo(ids, codigo),
+  entrar: (ids: IdsDeAcesso, valor: string) => entrar(ids, valor),
+  cadastrar: (ids: IdsDeAcesso, dados: Record<string, unknown>) => cadastrar(ids, dados),
 }))
+
+// Valor de mentira, usado só nos testes.
+const BOA = 'Aluno' + '@' + '123'
 
 function abrir() {
   return render(
     <MemoryRouter initialEntries={['/aluno/entrar']}>
       <Routes>
         <Route path="/aluno/entrar" element={<Entrar />} />
-        <Route path="/aluno/turmas/:codigo" element={<p>Página da turma</p>} />
+        <Route path="/aluno" element={<p>Painel do aluno</p>} />
       </Routes>
     </MemoryRouter>,
   )
-}
-
-async function preencherIds() {
-  await userEvent.type(screen.getByLabelText('ID do aluno'), 'a100')
-  await userEvent.type(screen.getByLabelText('ID da turma'), 'excia-cps-2610')
-  await userEvent.click(screen.getByRole('button', { name: 'Continuar' }))
 }
 
 afterEach(() => {
@@ -39,76 +34,107 @@ afterEach(() => {
 })
 
 describe('Entrar (aluno)', () => {
-  it('login recorrente: IDs → código, com e-mail mascarado, e segue para a turma', async () => {
-    verificarIds.mockResolvedValue({ etapa: 'codigo', emailMascarado: 'a•••@gmail.com' })
-    confirmarCodigo.mockResolvedValue('EXCIA-CPS-2610')
+  it('entra com ID do aluno, ID da turma e senha e vai para o painel', async () => {
+    entrar.mockResolvedValue('TURMA-001')
     abrir()
 
-    expect(screen.getByText('Etapa 1 de 2')).toBeTruthy()
-    await preencherIds()
-
-    expect(await screen.findByText(/a•••@gmail\.com/)).toBeTruthy()
-    expect(screen.getByText('Etapa 2 de 2')).toBeTruthy()
-    // Reenvio só libera depois de 60 s.
-    expect(screen.getByRole('button', { name: /Reenviar código em/ }).hasAttribute('disabled')).toBe(true)
-
-    await userEvent.type(screen.getByRole('textbox'), '123456')
+    await userEvent.type(screen.getByLabelText('ID do aluno'), 'aluno-001')
+    await userEvent.type(screen.getByLabelText('ID da turma'), 'turma-001')
+    await userEvent.type(screen.getByLabelText('Senha'), BOA)
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
 
-    expect(await screen.findByText('Página da turma')).toBeTruthy()
-    expect(confirmarCodigo).toHaveBeenCalledWith({ matricula: 'a100', codigoTurma: 'excia-cps-2610' }, '123456')
+    expect(await screen.findByText('Painel do aluno')).toBeTruthy()
+    expect(entrar).toHaveBeenCalledWith({ matricula: 'aluno-001', codigoTurma: 'turma-001' }, BOA)
   })
 
-  it('primeiro acesso: pede cadastro, exige o termo e não pré-marca a comunicação', async () => {
-    verificarIds.mockResolvedValue({ etapa: 'cadastro' })
-    cadastrar.mockResolvedValue({ etapa: 'codigo', emailMascarado: 'a•••@empresa.com' })
+  it('não chama o servidor com campo vazio', async () => {
     abrir()
-    await preencherIds()
+    await userEvent.type(screen.getByLabelText('ID do aluno'), 'aluno-001')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(screen.getByText('Informe o ID do aluno, o ID da turma e a senha.')).toBeTruthy()
+    expect(entrar).not.toHaveBeenCalled()
+  })
 
-    expect(await screen.findByText('Etapa 2 de 3')).toBeTruthy()
-    const comunicacao = screen.getByRole('switch')
-    expect(comunicacao.getAttribute('aria-checked')).toBe('false')
+  it('mostra a mensagem do servidor: credenciais erradas e conta bloqueada', async () => {
+    entrar.mockRejectedValueOnce(new Error('ID, turma ou senha incorretos.'))
+    entrar.mockRejectedValueOnce(
+      new Error('Sua conta está temporariamente bloqueada. Entre em contato com seu professor.'),
+    )
+    abrir()
+    await userEvent.type(screen.getByLabelText('ID do aluno'), 'aluno-001')
+    await userEvent.type(screen.getByLabelText('ID da turma'), 'turma-001')
+    await userEvent.type(screen.getByLabelText('Senha'), BOA)
 
-    await userEvent.type(screen.getByLabelText('Nome completo'), 'Ana Souza')
-    await userEvent.type(screen.getByLabelText('E-mail'), 'ana@empresa.com')
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('ID, turma ou senha incorretos.')
 
-    expect(await screen.findByText('É preciso aceitar o termo de uso para continuar.')).toBeTruthy()
-    expect(cadastrar).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByText(/temporariamente bloqueada/)).toBeTruthy()
+    // Continua na tela de entrada, com o que foi digitado.
+    expect((screen.getByLabelText('ID do aluno') as HTMLInputElement).value).toBe('aluno-001')
+  })
 
+  it('o botão de mostrar senha alterna o campo', async () => {
+    abrir()
+    const campo = screen.getByLabelText('Senha') as HTMLInputElement
+    expect(campo.type).toBe('password')
+    await userEvent.click(screen.getByRole('button', { name: 'Mostrar senha' }))
+    expect(campo.type).toBe('text')
+  })
+})
+
+describe('Criar conta (aluno)', () => {
+  async function preencher(confirmacao = BOA) {
+    await userEvent.click(screen.getByRole('tab', { name: 'Criar conta' }))
+    await userEvent.type(await screen.findByLabelText('Nome completo'), 'João Silva')
+    await userEvent.type(screen.getByLabelText('ID do aluno'), 'aluno-002')
+    await userEvent.type(screen.getByLabelText('ID da turma'), 'turma-001')
+    await userEvent.type(screen.getByLabelText('Senha'), BOA)
+    await userEvent.type(screen.getByLabelText('Confirmar senha'), confirmacao)
+  }
+
+  it('cria a conta e já entra', async () => {
+    cadastrar.mockResolvedValue('TURMA-001')
+    abrir()
+    await preencher()
     await userEvent.click(screen.getByRole('checkbox'))
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar código' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
 
-    expect(await screen.findByText('Etapa 3 de 3')).toBeTruthy()
+    expect(await screen.findByText('Painel do aluno')).toBeTruthy()
     expect(cadastrar).toHaveBeenCalledWith(
-      { matricula: 'a100', codigoTurma: 'excia-cps-2610' },
-      { nome: 'Ana Souza', email: 'ana@empresa.com', aceiteTermo: true, querComunicacao: false },
+      { matricula: 'aluno-002', codigoTurma: 'turma-001' },
+      { nome: 'João Silva', senha: BOA, aceiteTermo: true },
     )
   })
 
-  it('mostra a mensagem genérica do servidor quando os IDs não batem', async () => {
-    verificarIds.mockRejectedValue(new Error('Não encontramos essa combinação. Confira com o professor.'))
+  it('aponta cada campo vazio e não chama o servidor', async () => {
     abrir()
-    await preencherIds()
+    await userEvent.click(screen.getByRole('tab', { name: 'Criar conta' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Criar conta' }))
 
-    expect((await screen.findByRole('alert')).textContent).toBe(
-      'Não encontramos essa combinação. Confira com o professor.',
-    )
-    expect(screen.getByText('Etapa 1 de 2')).toBeTruthy()
+    expect(screen.getByText('Informe seu nome completo.')).toBeTruthy()
+    expect(screen.getByText('Informe o seu ID de aluno.')).toBeTruthy()
+    expect(screen.getByText('Informe o ID da turma.')).toBeTruthy()
+    expect(screen.getByText('A senha precisa ter ao menos 8 caracteres.')).toBeTruthy()
+    expect(screen.getByText('É preciso aceitar o termo de uso para continuar.')).toBeTruthy()
+    expect(cadastrar).not.toHaveBeenCalled()
   })
 
-  it('não chama o servidor com campos vazios nem com código incompleto', async () => {
-    verificarIds.mockResolvedValue({ etapa: 'codigo', emailMascarado: 'a•••@gmail.com' })
+  it('exige que as senhas coincidam e o aceite do termo', async () => {
     abrir()
+    await preencher(BOA + '4')
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.getByText('As senhas não coincidem.')).toBeTruthy()
+    expect(screen.getByText('É preciso aceitar o termo de uso para continuar.')).toBeTruthy()
+    expect(cadastrar).not.toHaveBeenCalled()
+  })
 
-    await userEvent.click(screen.getByRole('button', { name: 'Continuar' }))
-    expect(screen.getByText('Informe o ID do aluno e o ID da turma.')).toBeTruthy()
-    expect(verificarIds).not.toHaveBeenCalled()
-
-    await preencherIds()
-    await userEvent.type(await screen.findByRole('textbox'), '123')
-    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(screen.getByText('Informe o código de 6 dígitos.')).toBeTruthy()
-    expect(confirmarCodigo).not.toHaveBeenCalled()
+  it('mostra a recusa do servidor (ID fora da lista, conta já existente)', async () => {
+    cadastrar.mockRejectedValue(new Error('Já existe uma conta para este ID. Use a aba Entrar.'))
+    abrir()
+    await preencher()
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect((await screen.findByRole('alert')).textContent).toBe('Já existe uma conta para este ID. Use a aba Entrar.')
   })
 })
