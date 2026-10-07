@@ -1,12 +1,17 @@
 import {
-  BarChart3Icon,
   BookOpenIcon,
+  CircleHelpIcon,
+  ClipboardListIcon,
   GraduationCapIcon,
   HouseIcon,
   InboxIcon,
-  LayoutTemplateIcon,
+  ListChecksIcon,
   LogOutIcon,
+  MegaphoneIcon,
   MenuIcon,
+  MessageSquareIcon,
+  MessagesSquareIcon,
+  UsersIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { useState } from 'react'
@@ -17,50 +22,64 @@ import { useSessao } from '@/contextos/Sessao'
 import { sair } from '@/dados/sessao'
 import { cn } from '@/lib/utils'
 
-type Item = { rotulo: string; para: string; icone: LucideIcon; pronto: boolean }
+type Item = { rotulo: string; para: string; icone: LucideIcon }
+type Grupo = { titulo: string; itens: Item[] }
 
-/** Seções do admin (PRD, seção 5). As marcadas como não prontas aparecem desabilitadas. */
-const ITENS: Item[] = [
-  { rotulo: 'Painel', para: '/admin', icone: HouseIcon, pronto: true },
-  { rotulo: 'Landing', para: '/admin/landing', icone: LayoutTemplateIcon, pronto: false },
-  { rotulo: 'Mensagens de contato', para: '/admin/mensagens', icone: InboxIcon, pronto: true },
-  { rotulo: 'Cursos', para: '/admin/cursos', icone: BookOpenIcon, pronto: false },
-  { rotulo: 'Turmas', para: '/admin/turmas', icone: GraduationCapIcon, pronto: false },
-  { rotulo: 'Relatórios', para: '/admin/relatorios', icone: BarChart3Icon, pronto: false },
+/** Seções do painel do professor, agrupadas por assunto. */
+const GRUPOS: Grupo[] = [
+  {
+    titulo: 'Geral',
+    itens: [
+      { rotulo: 'Painel', para: '/admin', icone: HouseIcon },
+      { rotulo: 'Alunos', para: '/admin/alunos', icone: UsersIcon },
+      { rotulo: 'Turmas', para: '/admin/turmas', icone: GraduationCapIcon },
+    ],
+  },
+  {
+    titulo: 'Ensino',
+    itens: [
+      { rotulo: 'Conteúdos', para: '/admin/conteudos', icone: BookOpenIcon },
+      { rotulo: 'Atividades', para: '/admin/atividades', icone: ClipboardListIcon },
+      { rotulo: 'Questões', para: '/admin/questoes', icone: ListChecksIcon },
+    ],
+  },
+  {
+    titulo: 'Comunicação',
+    itens: [
+      { rotulo: 'Dúvidas', para: '/admin/duvidas', icone: CircleHelpIcon },
+      { rotulo: 'Mensagens', para: '/admin/conversas', icone: MessagesSquareIcon },
+      { rotulo: 'Feedbacks', para: '/admin/feedbacks', icone: MessageSquareIcon },
+      { rotulo: 'Avisos', para: '/admin/avisos', icone: MegaphoneIcon },
+      { rotulo: 'Contatos do site', para: '/admin/mensagens', icone: InboxIcon },
+    ],
+  },
 ]
 
 function Navegacao({ aoNavegar }: { aoNavegar?: () => void }) {
   return (
-    <nav aria-label="Painel do professor" className="flex flex-col gap-1">
-      {ITENS.map((item) =>
-        item.pronto ? (
-          <NavLink
-            key={item.para}
-            to={item.para}
-            end={item.para === '/admin'}
-            onClick={aoNavegar}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 border-2 border-transparent px-3 py-2.5 text-sm font-bold',
-                isActive ? 'border-foreground bg-secondary text-secondary-foreground' : 'hover:bg-accent',
-              )
-            }
-          >
-            <item.icone aria-hidden="true" className="size-4" />
-            {item.rotulo}
-          </NavLink>
-        ) : (
-          <span
-            key={item.para}
-            aria-disabled="true"
-            className="flex items-center gap-3 px-3 py-2.5 text-sm text-muted-foreground"
-          >
-            <item.icone aria-hidden="true" className="size-4" />
-            {item.rotulo}
-            <span className="eyebrow ml-auto text-[9px]">Em breve</span>
-          </span>
-        ),
-      )}
+    <nav aria-label="Painel do professor" className="flex flex-col gap-5">
+      {GRUPOS.map((grupo) => (
+        <div key={grupo.titulo} className="flex flex-col gap-1">
+          <p className="eyebrow px-3 pb-1 text-[10px] text-muted-foreground">{grupo.titulo}</p>
+          {grupo.itens.map((item) => (
+            <NavLink
+              key={item.para}
+              to={item.para}
+              end={item.para === '/admin'}
+              onClick={aoNavegar}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 border-2 border-transparent px-3 py-2 text-sm font-semibold',
+                  isActive ? 'border-foreground bg-secondary text-secondary-foreground' : 'hover:bg-accent',
+                )
+              }
+            >
+              <item.icone aria-hidden="true" className="size-4" />
+              {item.rotulo}
+            </NavLink>
+          ))}
+        </div>
+      ))}
     </nav>
   )
 }
@@ -79,12 +98,12 @@ export function LayoutAdmin() {
 
   return (
     <div className="plataforma flex min-h-screen flex-col md:flex-row">
-      <aside className="hidden w-64 shrink-0 flex-col gap-8 border-r-2 bg-card px-4 py-6 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r-2 bg-card px-4 py-6 md:flex">
         <Link to="/" className="px-3 font-mono text-lg font-bold tracking-[-0.02em]">
           Vitor Ramos
         </Link>
         <Navegacao />
-        <div className="mt-auto flex flex-col gap-2 px-3">
+        <div className="mt-auto flex flex-col gap-2 px-3 pt-4">
           {perfil && <p className="truncate text-xs text-muted-foreground">{perfil.email}</p>}
           <Button size="sm" variant="outline" onClick={() => void encerrar()}>
             <LogOutIcon aria-hidden="true" />
@@ -103,12 +122,12 @@ export function LayoutAdmin() {
               <MenuIcon />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[280px] border-r-2">
+          <SheetContent side="left" className="plataforma w-[280px] overflow-y-auto border-r-2">
             <SheetHeader>
               <SheetTitle className="font-mono font-bold">Painel do professor</SheetTitle>
               <SheetDescription className="sr-only">Navegação do painel</SheetDescription>
             </SheetHeader>
-            <div className="flex flex-col gap-6 px-4">
+            <div className="flex flex-col gap-6 px-4 pb-6">
               <Navegacao aoNavegar={() => setMenuAberto(false)} />
               <Button size="sm" variant="outline" onClick={() => void encerrar()}>
                 Sair
@@ -118,8 +137,10 @@ export function LayoutAdmin() {
         </Sheet>
       </header>
 
-      <main className="flex-1 px-4 py-8 md:px-10 md:py-10">
-        <Outlet />
+      <main className="min-w-0 flex-1 px-4 py-8 md:px-10 md:py-10">
+        <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
