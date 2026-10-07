@@ -79,9 +79,42 @@ describe('Landing — seções novas', () => {
     expect(within(contato).getByRole('combobox').textContent).toBe('Consultoria')
   })
 
-  it('o terminal de temas expõe a lista completa para leitores de tela', async () => {
+  it('o hero expõe os cinco temas do guia como lista, para leitores de tela', async () => {
     abrir()
-    expect(await screen.findByText('Dados, IA, Educação, Produto, Engenharia')).toBeTruthy()
+    const temas = await screen.findByRole('list', { name: 'Temas' })
+    expect(within(temas).getAllByRole('listitem').map((li) => li.textContent?.replace(/\d+$/, ''))).toEqual([
+      'Dados',
+      'IA',
+      'Educação',
+      'Produto',
+      'Engenharia',
+    ])
+  })
+
+  it('o nome do hero recebe a escala calculada para caber na largura da página', async () => {
+    abrir()
+    const nome = await screen.findByRole('heading', { level: 1, name: 'Vitor Ramos' })
+    expect(nome.style.getPropertyValue('--colunas-linha')).toBe('11')
+    expect(nome.style.getPropertyValue('--colunas-pilha')).toBe('5')
+  })
+
+  it('a prévia da sala, sem animação, mostra o encontro completo', async () => {
+    abrir()
+    const previa = await screen.findByRole('group', { name: 'Prévia ilustrativa da sala de aula' })
+    expect(within(previa).getByRole('img', { name: 'Régua do encontro' }).children).toHaveLength(6)
+    expect(within(previa).getByText('22:45')).toBeTruthy()
+    expect(within(previa).getByText('+12')).toBeTruthy()
+    expect(within(previa).getByText('Correta')).toBeTruthy()
+    expect(within(previa).getByText('Planilha de exercícios')).toBeTruthy()
+  })
+
+  it('o rodapé da landing fecha com a assinatura decorativa, fora da leitura de tela', async () => {
+    abrir()
+    await screen.findByRole('heading', { level: 1 })
+    const rodape = screen.getByRole('contentinfo')
+    const assinatura = rodape.querySelector('[data-assinatura]')
+    expect(assinatura?.textContent).toBe('Vitor Ramos')
+    expect(assinatura?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('leva à área do aluno a partir da seção da sala de aula e da chamada final', async () => {
