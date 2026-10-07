@@ -1,7 +1,8 @@
 import { ArrowRightIcon } from 'lucide-react'
-import { useRef } from 'react'
+import { useRef, type FocusEvent } from 'react'
 import type { Assunto } from '@/dominio/contato'
-import { gsap, useMovimento } from '@/lib/movimento'
+import { deBloco, deMascara, deRegua, embaralhar, gsap, SplitText, useMovimento } from '@/lib/movimento'
+import { ALTURA_DO_CABECALHO, rolarAte } from '@/lib/rolagem'
 import { cn } from '@/lib/utils'
 
 type Frente = {
@@ -9,10 +10,8 @@ type Frente = {
   titulo: string
   texto: string
   assunto: Assunto
-  /** Cor do marcador e do bloco que varre a linha no hover. */
-  cor: string
-  /** Cor do texto sobre o bloco: branco no azul, Tinta no laranja e no verde. */
-  textoSobreACor: string
+  /** Cor que toma a tela e cor do texto sobre ela (branco no azul; Tinta no laranja e no verde). */
+  painel: string
 }
 
 /**
@@ -25,107 +24,133 @@ const FRENTES: Frente[] = [
     titulo: 'Letramento em Dados',
     texto: 'Como estruturar times para decisões orientadas a dados.',
     assunto: 'palestra',
-    cor: 'bg-primary',
-    textoSobreACor: 'hover:text-primary-foreground focus-visible:text-primary-foreground',
+    painel: 'bg-primary text-primary-foreground',
   },
   {
     rotulo: 'Treinamento',
     titulo: 'IA Aplicada',
     texto: 'Módulo prático de modelos de linguagem para produto.',
     assunto: 'treinamento',
-    cor: 'bg-orange',
-    textoSobreACor: 'hover:text-tinta focus-visible:text-tinta',
+    painel: 'bg-orange text-tinta',
   },
   {
     rotulo: 'Consultoria',
     titulo: 'Produto de Dados',
     texto: 'Do diagnóstico ao roadmap de engenharia de IA.',
     assunto: 'consultoria',
-    cor: 'bg-green',
-    textoSobreACor: 'hover:text-tinta focus-visible:text-tinta',
+    painel: 'bg-green text-tinta',
   },
 ]
 
 type Props = { aoEscolher: (assunto: Assunto) => void }
 
 /**
- * Lista editorial das frentes: uma linha por frente, com o título em letra
- * grande. No hover e no foco, um bloco chapado da cor da frente varre a linha.
+ * Três painéis de tela cheia, um por frente, cada um na sua cor. O painel
+ * inteiro é o link "Conversar sobre …".
  *
- * Movimento: ao entrar na tela, a régua de cada linha se desenha e o título
- * sobe de dentro da própria linha.
+ * Movimento:
+ *  - completo (telas largas): os painéis empilham — cada um gruda no topo
+ *    (`position: sticky`, classe `painel-empilhado`) e o seguinte sobe por
+ *    cima, tomando a tela com a sua cor, enquanto o de baixo recua. É rolagem
+ *    nativa: todo link continua alcançável, e o foco por teclado leva a página
+ *    até o painel focado.
+ *  - essencial e celular: painéis em sequência, sem grudar; título, régua e
+ *    textos entram com fade curto.
  */
 export function FrentesDeTrabalho({ aoEscolher }: Props) {
   const raiz = useRef<HTMLUListElement>(null)
 
-  useMovimento(raiz, (_condicoes, q) => {
-    q('[data-frente]').forEach((linha) => {
-      const dentro = (seletor: string) => Array.from(linha.querySelectorAll<HTMLElement>(seletor))
-      gsap
-        .timeline({ scrollTrigger: { trigger: linha, start: 'top 85%', once: true } })
-        .from(dentro('[data-regua]'), { scaleX: 0, duration: 1.2, ease: 'circ.out' }, 0)
-        .from(dentro('[data-titulo]'), { yPercent: 105, duration: 1.1, ease: 'expo.out' }, 0.05)
-        .from(dentro('[data-apoio]'), { y: 24, opacity: 0, duration: 0.8, ease: 'power2.out', stagger: 0.07 }, 0.2)
+  useMovimento(raiz, (c, q) => {
+    const paineis = q('[data-painel]')
+    paineis.forEach((painel, i) => {
+      const dentro = (seletor: string) => Array.from(painel.querySelectorAll<HTMLElement>(seletor))
+      const palavras = SplitText.create(dentro('h3'), { type: 'words', mask: 'words' })
+      const linha = gsap
+        .timeline({ scrollTrigger: { trigger: painel, start: 'top 75%', once: true } })
+        .from(dentro('[data-regua]'), deRegua(c), 0)
+        .from(palavras.words, { ...deMascara(c), stagger: 0.08 }, 0.05)
+        .from(dentro('[data-apoio]'), { ...deBloco(c, 28), stagger: 0.08 }, 0.25)
+      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo, c), 0))
+
+      if (!c.completo) return
+      // O número gigante sobe mais devagar que o painel.
+      gsap.fromTo(
+        dentro('[data-numero]'),
+        { yPercent: 18 },
+        { yPercent: -18, ease: 'none', scrollTrigger: { trigger: painel, start: 'top bottom', end: 'bottom top', scrub: true } },
+      )
+      // Enquanto o painel seguinte cobre este, o conteúdo recua.
+      const seguinte = paineis[i + 1]
+      if (seguinte && c.desktop) {
+        gsap.to(dentro('[data-conteudo]'), {
+          scale: 0.9,
+          yPercent: -5,
+          ease: 'none',
+          scrollTrigger: { trigger: seguinte, start: 'top bottom', end: `top ${ALTURA_DO_CABECALHO}px`, scrub: true },
+        })
+      }
     })
   })
+
+  // Empilhado, um painel anterior fica coberto: o foco por teclado leva a página até ele.
+  function aoFocar(evento: FocusEvent<HTMLAnchorElement>, indice: number) {
+    const lista = raiz.current
+    const painel = evento.currentTarget.parentElement
+    if (!lista || !painel || !evento.currentTarget.matches(':focus-visible')) return
+    if (getComputedStyle(painel).position !== 'sticky') return
+    const topoDaLista = lista.getBoundingClientRect().top + window.scrollY
+    rolarAte(topoDaLista + indice * painel.offsetHeight, -ALTURA_DO_CABECALHO)
+  }
 
   return (
     <ul ref={raiz}>
       {FRENTES.map((frente, i) => (
-        <li key={frente.titulo} data-frente className="relative">
-          {/* A primeira linha usa a régua do cabeçalho da seção. */}
-          {i > 0 && <span aria-hidden="true" data-regua className="block h-0.5 origin-left bg-foreground" />}
+        <li key={frente.titulo} data-painel className="painel-empilhado">
           <a
             href="#contato"
+            data-cursor="Conversar"
             onClick={() => aoEscolher(frente.assunto)}
+            onFocus={(evento) => aoFocar(evento, i)}
             className={cn(
-              'group relative grid items-center gap-x-6 gap-y-4 overflow-hidden px-2 py-8 transition-colors duration-300 md:grid-cols-12 md:px-4 md:py-12',
-              frente.textoSobreACor,
+              'group relative flex min-h-[78svh] flex-col overflow-hidden focus-visible:outline-offset-[-6px] focus-visible:outline-current lg:min-h-[calc(100svh-4rem)]',
+              frente.painel,
             )}
           >
-            {/* Bloco chapado que varre a linha. */}
             <span
               aria-hidden="true"
-              className={cn(
-                'absolute inset-0 origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.2,1)] group-hover:scale-x-100 group-focus-visible:scale-x-100',
-                frente.cor,
-              )}
-            />
-            <span data-apoio className="relative flex items-center gap-3 md:col-span-2">
-              <span aria-hidden="true" className="font-mono text-sm">
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  'size-3 transition-colors duration-300 group-hover:bg-tinta group-focus-visible:bg-tinta',
-                  frente.cor,
-                )}
-              />
-              <span className="eyebrow">{frente.rotulo}</span>
-            </span>
-            <h3 className="relative overflow-hidden pb-[0.1em] text-[clamp(34px,5vw,84px)] leading-none md:col-span-5">
-              <span data-titulo className="block">
-                {frente.titulo}
-              </span>
-            </h3>
-            <p data-apoio className="relative max-w-[34ch] text-base leading-normal md:col-span-3 md:text-lg">
-              {frente.texto}
-            </p>
-            <span
-              data-apoio
-              className="relative inline-flex min-h-11 items-center gap-2 text-sm font-bold md:col-span-2 md:justify-self-end"
+              data-numero
+              className="pointer-events-none absolute right-(--calha) hidden md:block bottom-[-0.12em] font-mono text-[clamp(180px,30vw,560px)] leading-none font-bold"
             >
-              Conversar sobre {frente.rotulo.toLowerCase()}
-              <ArrowRightIcon
-                aria-hidden="true"
-                className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1.5 group-focus-visible:translate-x-1.5"
-              />
+              {i + 1}
             </span>
+
+            <div data-conteudo className="conteiner-landing relative flex flex-1 origin-top flex-col justify-between gap-(--espaco-bloco) py-(--espaco-item)">
+              <div className="flex items-center gap-4">
+                <span aria-hidden="true" data-embaralha className="font-mono text-sm">
+                  {String(i + 1).padStart(2, '0')} / {String(FRENTES.length).padStart(2, '0')}
+                </span>
+                <span className="eyebrow">{frente.rotulo}</span>
+                <span aria-hidden="true" data-regua className="h-0.5 flex-1 origin-left bg-current" />
+              </div>
+
+              <h3 className="max-w-[12ch] text-[clamp(44px,9.5vw,176px)] leading-none">{frente.titulo}</h3>
+
+              <div className="flex max-w-[52ch] flex-col gap-(--espaco-miolo)">
+                <p data-apoio className="text-xl leading-[1.4] md:text-2xl">
+                  {frente.texto}
+                </p>
+                <span data-apoio className="inline-flex min-h-11 items-center gap-3 text-base font-bold md:text-lg">
+                  <span className="border-b-2 border-current pb-1">Conversar sobre {frente.rotulo.toLowerCase()}</span>
+                  <ArrowRightIcon
+                    aria-hidden="true"
+                    className="size-6 shrink-0 transition-transform duration-300 group-hover:translate-x-3 group-focus-visible:translate-x-3"
+                  />
+                </span>
+              </div>
+            </div>
           </a>
         </li>
       ))}
-      <li aria-hidden="true" className="h-0.5 bg-foreground" />
     </ul>
   )
 }
