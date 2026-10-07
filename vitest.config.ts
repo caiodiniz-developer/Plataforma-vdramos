@@ -3,7 +3,12 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname, './src') },
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+      // As Edge Functions importam o SDK pelo especificador do Deno; nos testes
+      // ele é trocado por um Supabase em memória (supabase/tests/funcoes).
+      'npm:@supabase/supabase-js@2': path.resolve(import.meta.dirname, './supabase/tests/funcoes/sdk.ts'),
+    },
   },
   test: {
     include: ['src/**/*.test.{ts,tsx}', 'supabase/tests/**/*.test.ts'],
