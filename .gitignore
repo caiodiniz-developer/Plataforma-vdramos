@@ -24,3 +24,4 @@ e2e/.resultados/
 e2e/capturas/
 playwright-report/
 test-results/
+dist-e2e-*/
