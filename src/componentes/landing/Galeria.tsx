@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import type { Foto } from '@/conteudo/galeria'
-import { gsap, RECORTE_ABERTO, useMovimento } from '@/lib/movimento'
+import { deBloco, deRegua, embaralhar, gsap, RECORTE_ABERTO, ScrollTrigger, useMovimento } from '@/lib/movimento'
 
 /**
  * Posição de cada foto na grade de 12 colunas (desktop). O padrão se repete a
@@ -9,43 +9,49 @@ import { gsap, RECORTE_ABERTO, useMovimento } from '@/lib/movimento'
  */
 const POSICOES = [
   'md:col-span-7',
-  'md:col-span-4 md:col-start-9 md:mt-48',
+  'md:col-span-4 md:col-start-9 md:mt-[22vw]',
   'md:col-span-5 md:col-start-2',
-  'md:col-span-5 md:col-start-8 md:mt-40',
+  'md:col-span-5 md:col-start-8 md:mt-[16vw]',
   'md:col-span-8 md:col-start-3',
 ]
 
 /** Deslocamento de parallax de cada posição, em px (0 = acompanha a página). */
-const PARALLAX = [0, -90, -40, -120, 0]
+const PARALLAX = [0, -110, -50, -140, 0]
 
 /**
  * Galeria editorial. As fotos vêm de `src/conteudo/galeria.ts`; enquanto forem
  * ilustrações provisórias, aparecem com a etiqueta "Foto de exemplo".
  *
- * Movimento: cada moldura abre por recorte (`clip-path`) de baixo para cima
- * enquanto a imagem assenta; no desktop, as colunas deslizam em velocidades
- * diferentes ao rolar.
+ * Movimento:
+ *  - essencial: a moldura abre por recorte curto e a legenda entra com fade.
+ *  - completo: a imagem assenta com zoom enquanto a moldura abre, as colunas
+ *    deslizam em velocidades diferentes e as molduras inclinam de leve com a
+ *    velocidade da rolagem.
+ * No hover (CSS): a faixa azul da base recua, a legenda desliza.
  */
 export function Galeria({ fotos }: { fotos: Foto[] }) {
   const raiz = useRef<HTMLUListElement>(null)
 
-  useMovimento(raiz, ({ desktop }, q) => {
+  useMovimento(raiz, (c, q) => {
     q('[data-foto]').forEach((item, i) => {
       const dentro = (seletor: string) => Array.from(item.querySelectorAll<HTMLElement>(seletor))
-      gsap
+      const linha = gsap
         .timeline({ scrollTrigger: { trigger: item, start: 'top 85%', once: true } })
         .fromTo(
           dentro('[data-moldura]'),
-          { clipPath: 'inset(100% 0% 0% 0%)' },
-          { clipPath: RECORTE_ABERTO, duration: 1.3, ease: 'power3.inOut' },
+          { clipPath: c.completo ? 'inset(100% 0% 0% 0%)' : 'inset(14% 0% 0% 0%)', opacity: c.completo ? 1 : 0 },
+          { clipPath: RECORTE_ABERTO, opacity: 1, duration: c.completo ? 1.3 : 0.7, ease: 'power3.inOut' },
           0,
         )
-        .from(dentro('[data-imagem]'), { scale: 1.3, duration: 1.6, ease: 'power2.out' }, 0)
-        .from(dentro('[data-regua]'), { scaleX: 0, duration: 1.1, ease: 'circ.out' }, 0.5)
-        .from(dentro('figcaption'), { y: 16, opacity: 0, duration: 0.7, ease: 'power2.out' }, 0.6)
+        .from(dentro('[data-regua]'), deRegua(c), c.completo ? 0.5 : 0.2)
+        .from(dentro('figcaption'), deBloco(c, 16), c.completo ? 0.6 : 0.25)
+      dentro('[data-embaralha]').forEach((alvo) => linha.add(embaralhar(alvo, c), c.completo ? 0.6 : 0.25))
+
+      if (!c.completo) return
+      linha.from(dentro('[data-imagem]'), { scale: 1.3, duration: 1.6, ease: 'power2.out' }, 0)
 
       const deslocamento = PARALLAX[i % PARALLAX.length]
-      if (desktop && deslocamento !== 0) {
+      if (c.desktop && deslocamento !== 0) {
         gsap.to(dentro('figure'), {
           y: deslocamento,
           ease: 'none',
@@ -53,34 +59,61 @@ export function Galeria({ fotos }: { fotos: Foto[] }) {
         })
       }
     })
+
+    if (!c.completo) return
+    // Inclinação leve conforme a velocidade da rolagem; volta a zero quando ela para.
+    const inclinar = gsap.quickTo(q('[data-inclina]'), 'skewY', { duration: 0.6, ease: 'power3.out' })
+    ScrollTrigger.create({
+      trigger: raiz.current,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: (self) => inclinar(gsap.utils.clamp(-3, 3, self.getVelocity() / -700)),
+      onLeave: () => inclinar(0),
+      onLeaveBack: () => inclinar(0),
+    })
+    const assentar = () => inclinar(0)
+    ScrollTrigger.addEventListener('scrollEnd', assentar)
+    return () => ScrollTrigger.removeEventListener('scrollEnd', assentar)
   })
 
   if (fotos.length === 0) return null
 
   return (
-    <ul ref={raiz} className="grid gap-x-6 gap-y-14 md:grid-cols-12 md:gap-y-24">
+    <ul ref={raiz} className="grid gap-x-6 gap-y-(--espaco-bloco) md:grid-cols-12">
       {fotos.map((foto, i) => (
         <li key={foto.arquivo} data-foto className={POSICOES[i % POSICOES.length]}>
-          <figure>
-            <div data-moldura className="relative overflow-hidden border-2 bg-secondary">
-              <img
-                data-imagem
-                src={foto.arquivo}
-                alt={foto.alt}
-                loading="lazy"
-                width={1200}
-                height={900}
-                className="aspect-4/3 w-full object-cover"
-              />
-              {foto.exemplo && (
-                <Badge variant="neutro" className="absolute right-3 bottom-3">
-                  Foto de exemplo
-                </Badge>
-              )}
+          <figure data-cursor="Ver" className="group">
+            <div data-inclina>
+              <div data-moldura className="relative overflow-hidden border-2 bg-secondary">
+                {/* O zoom do hover fica no invólucro: a imagem em si é animada pelo GSAP. */}
+                <span className="block transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.1,1)] group-hover:scale-[1.05]">
+                <img
+                  data-imagem
+                  src={foto.arquivo}
+                  alt={foto.alt}
+                  loading="lazy"
+                  width={1200}
+                  height={900}
+                  className="aspect-4/3 w-full object-cover"
+                />
+                </span>
+                {/* Faixa azul na base da foto: recua no hover. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-2 origin-bottom bg-primary transition-transform duration-500 ease-[cubic-bezier(0.7,0,0.2,1)] group-hover:scale-y-0"
+                />
+                {foto.exemplo && (
+                  <Badge variant="neutro" className="absolute right-3 bottom-5">
+                    Foto de exemplo
+                  </Badge>
+                )}
+              </div>
             </div>
-            <figcaption className="flex items-baseline justify-between gap-4 pt-4 pb-3">
-              <span className="font-mono text-xl font-bold md:text-2xl">{foto.legenda}</span>
-              <span aria-hidden="true" className="font-mono text-sm text-muted-foreground">
+            <figcaption className="flex items-baseline justify-between gap-4 pt-5 pb-4">
+              <span className="font-mono text-xl font-bold transition-transform duration-500 ease-[cubic-bezier(0.2,0.7,0.1,1)] group-hover:translate-x-3 md:text-2xl">
+                {foto.legenda}
+              </span>
+              <span aria-hidden="true" data-embaralha className="font-mono text-sm text-muted-foreground">
                 {String(i + 1).padStart(2, '0')} / {String(fotos.length).padStart(2, '0')}
               </span>
             </figcaption>
