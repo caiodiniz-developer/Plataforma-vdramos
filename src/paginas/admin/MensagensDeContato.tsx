@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { listarMensagensDeContato, marcarMensagem } from '@/dados/admin'
 import { ROTULO_ASSUNTO } from '@/dominio/contato'
@@ -35,13 +35,14 @@ export default function MensagensDeContato() {
         <h1 className="text-[28px] md:text-[36px]">Mensagens de contato</h1>
       </div>
 
-      <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
+      <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)} className="gap-6">
         <TabsList>
           <TabsTrigger value="nao_lidas">Não lidas</TabsTrigger>
           <TabsTrigger value="lidas">Lidas</TabsTrigger>
           <TabsTrigger value="todas">Todas</TabsTrigger>
         </TabsList>
-      </Tabs>
+        {/* O painel da aba ativa: sem ele, as abas apontam para um elemento que não existe. */}
+        <TabsContent value={filtro} className="flex flex-col gap-6">
 
       {carregando && !dados && (
         <div className="flex flex-col gap-3" aria-busy="true">
@@ -91,6 +92,8 @@ export default function MensagensDeContato() {
           ))}
         </ul>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
