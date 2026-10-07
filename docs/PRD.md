@@ -504,7 +504,7 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
   - Regras: só `transform`, `opacity` e `clip-path` são animados, sem `will-change`; animação presa à rolagem (scrub) não usa curva temporal. O estado escondido é aplicado pelo próprio GSAP, nunca por CSS, e nunca com `visibility` (um link abaixo da dobra perderia o nome acessível). Texto dividido pelo SplitText fica só em títulos, com `aria-label` no título e `aria-hidden` nos pedaços. Ao sair da rota tudo é desfeito (tweens, gatilhos e o espaçador da seção fixa).
   - Com `prefers-reduced-motion: reduce` nada disso é montado: a página aparece completa e estática (prévia da sala com o encontro inteiro), sem seção fixa; nenhuma informação depende da animação. A barra de progresso de leitura continua, por ser resposta direta à rolagem da própria pessoa.
   - Sem sombras nem gradientes (a grade de fundo do hero é feita de linhas).
-- Componentes shadcn: `NavigationMenu`, `Button`, `Avatar`, `Badge`, `Tabs`, `Card`, `Separator`, `Form`, `Input`, `Textarea`, `Select`, `Checkbox`, `Toast`/`Sonner`, `Sheet` (menu mobile).
+- Componentes shadcn: `Button`, `Badge`, `Tabs`, `Input`, `Textarea`, `Label`, `Select`, `Checkbox`, `Skeleton`, `Toast`/`Sonner`, `Sheet` (menu mobile). A landing editorial não usa `Card`, `Avatar`, `Separator` nem `NavigationMenu`: as seções são separadas por réguas de 2 px e o retrato é uma imagem com moldura.
 
 ### Privacidade `/privacidade`
 
