@@ -30,7 +30,7 @@ export default function EntrarAdmin() {
     setErro(null)
     try {
       await entrarComoAdmin(email, senha)
-      recarregar()
+      await recarregar()
       navegar('/admin', { replace: true })
     } catch (falha) {
       setErro((falha as Error).message)

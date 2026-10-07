@@ -32,7 +32,7 @@ function Cabecalho({ turma, turmas }: { turma: DadosDaTurma; turmas: { codigo: s
 
   async function encerrarSessao() {
     await sair()
-    recarregar()
+    await recarregar()
     navegar('/aluno/entrar', { replace: true })
   }
 
@@ -79,10 +79,9 @@ export default function Turma() {
   // Seção 7: ID desativado com sessão aberta → a leitura volta vazia e o app sai.
   useEffect(() => {
     if (erro !== SEM_ACESSO_A_TURMA) return
-    void sair().then(() => {
-      recarregarSessao()
-      navegar('/aluno/entrar', { replace: true })
-    })
+    void sair()
+      .then(recarregarSessao)
+      .then(() => navegar('/aluno/entrar', { replace: true }))
   }, [erro, navegar, recarregarSessao])
 
   if (carregando && !dados) {

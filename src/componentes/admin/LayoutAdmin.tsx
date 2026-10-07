@@ -73,7 +73,7 @@ export function LayoutAdmin() {
 
   async function encerrar() {
     await sair()
-    recarregar()
+    await recarregar()
     navegar('/admin/entrar', { replace: true })
   }
 
