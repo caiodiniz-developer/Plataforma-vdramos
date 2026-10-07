@@ -25,3 +25,6 @@ e2e/capturas/
 playwright-report/
 test-results/
 dist-e2e-*/
+
+# Build usado so para capturas de tela
+dist-captura/
