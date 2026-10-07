@@ -26,7 +26,7 @@ const FRENTES: Frente[] = [
     texto: 'Como estruturar times para decisões orientadas a dados.',
     assunto: 'palestra',
     cor: 'bg-primary',
-    textoSobreACor: 'group-hover:text-primary-foreground group-focus-visible:text-primary-foreground',
+    textoSobreACor: 'hover:text-primary-foreground focus-visible:text-primary-foreground',
   },
   {
     rotulo: 'Treinamento',
@@ -34,7 +34,7 @@ const FRENTES: Frente[] = [
     texto: 'Módulo prático de modelos de linguagem para produto.',
     assunto: 'treinamento',
     cor: 'bg-orange',
-    textoSobreACor: 'group-hover:text-tinta group-focus-visible:text-tinta',
+    textoSobreACor: 'hover:text-tinta focus-visible:text-tinta',
   },
   {
     rotulo: 'Consultoria',
@@ -42,7 +42,7 @@ const FRENTES: Frente[] = [
     texto: 'Do diagnóstico ao roadmap de engenharia de IA.',
     assunto: 'consultoria',
     cor: 'bg-green',
-    textoSobreACor: 'group-hover:text-tinta group-focus-visible:text-tinta',
+    textoSobreACor: 'hover:text-tinta focus-visible:text-tinta',
   },
 ]
 
