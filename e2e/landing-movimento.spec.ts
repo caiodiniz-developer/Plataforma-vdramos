@@ -101,6 +101,24 @@ test.describe('movimento da landing', () => {
     await expect(previa(page).getByText('+12')).toBeAttached()
   })
 
+  test('no hover, a frente em azul troca o texto para branco (Tinta sobre azul não passa em AA)', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, 'hover só existe com ponteiro fino')
+    await abrir(page)
+    const cor = (nome: RegExp) =>
+      page.getByRole('link', { name: nome }).evaluate((el) => getComputedStyle(el.querySelector('h3')!).color)
+
+    await page.getByRole('link', { name: /Conversar sobre palestra/ }).hover()
+    await expect.poll(() => cor(/Conversar sobre palestra/)).toBe('rgb(255, 255, 255)')
+
+    // Laranja e verde recebem texto em Tinta.
+    await page.getByRole('link', { name: /Conversar sobre treinamento/ }).hover()
+    await expect.poll(() => cor(/Conversar sobre treinamento/)).toBe('rgb(24, 26, 30)')
+    await expect.poll(() => cor(/Conversar sobre palestra/)).toBe('rgb(24, 26, 30)')
+  })
+
   test('o título dividido em letras continua com o nome inteiro para leitores de tela', async ({ page }) => {
     await abrir(page)
     const titulo = page.getByRole('heading', { level: 1 })
@@ -128,6 +146,18 @@ test.describe('movimento da landing', () => {
     )
     expect(escondidos).toBe(0)
     await contexto.close()
+  })
+
+  test('em 768 px as âncoras ficam no menu, que abre e leva à seção', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 })
+    await abrir(page)
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Contato' })).toBeHidden()
+    await page.getByRole('button', { name: 'Abrir menu' }).click()
+    const menu = page.getByRole('dialog')
+    await menu.getByRole('link', { name: 'Sala de aula' }).click()
+    await expect(menu).toBeHidden()
+    await expect(page).toHaveURL(/#sala-de-aula$/)
+    await expect(page.getByRole('heading', { level: 2, name: 'Sala de aula interativa' })).toBeInViewport()
   })
 
   for (const largura of [360, 768, 1920]) {
