@@ -16,10 +16,13 @@ export const CONSULTAS = {
   movimento: '(prefers-reduced-motion: no-preference)',
   desktop: '(min-width: 1024px)',
   // Altura mínima para fixar uma seção inteira na tela sem cortar conteúdo.
-  alto: '(min-height: 740px)',
+  alto: '(min-height: 800px)',
 } as const
 
 export type Condicoes = Record<keyof typeof CONSULTAS, boolean>
+
+/** Busca elementos só dentro do escopo do componente (nunca na página toda). */
+export type Seletor = (seletor: string) => HTMLElement[]
 
 /**
  * Monta animações do GSAP dentro de `escopo` (os seletores em texto só
@@ -32,19 +35,22 @@ export type Condicoes = Record<keyof typeof CONSULTAS, boolean>
  */
 export function useMovimento(
   escopo: RefObject<HTMLElement | null>,
-  montar: (condicoes: Condicoes) => void,
+  montar: (condicoes: Condicoes, q: Seletor) => void | (() => void),
   dependencias: unknown[] = [],
 ) {
   useGSAP(
     () => {
+      const raiz = escopo.current
+      if (!raiz) return
+      const q: Seletor = (seletor) => Array.from(raiz.querySelectorAll<HTMLElement>(seletor))
       const mm = gsap.matchMedia()
       mm.add(
         CONSULTAS,
         (contexto) => {
           const condicoes = contexto.conditions as Condicoes
-          if (condicoes.movimento) montar(condicoes)
+          if (condicoes.movimento) return montar(condicoes, q)
         },
-        escopo.current ?? undefined,
+        raiz,
       )
     },
     { scope: escopo, dependencies: dependencias, revertOnUpdate: true },
