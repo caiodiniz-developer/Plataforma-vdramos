@@ -267,7 +267,7 @@ export default function Conteudos() {
           return (
             <>
               <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                <TabsList className="h-auto flex-wrap">
+                <TabsList className="max-w-full justify-start overflow-x-auto">
                   <TabsTrigger value="todos">Todos</TabsTrigger>
                   <TabsTrigger value="aulas">Aulas</TabsTrigger>
                   <TabsTrigger value="extras">Aulas extras</TabsTrigger>
@@ -291,7 +291,7 @@ export default function Conteudos() {
                       <li key={c.id}>
                         <Card>
                           <CardContent className="flex flex-wrap items-start gap-4">
-                            <div className="flex min-w-0 flex-1 flex-col gap-2">
+                            <div className="flex min-w-[min(100%,280px)] flex-1 flex-col gap-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 <Badge variant="outline">{ROTULO_TIPO_CONTEUDO[c.tipo]}</Badge>
                                 <Badge variant={!c.publicado ? 'neutro' : agendado ? 'violet' : 'green'}>

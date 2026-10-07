@@ -101,7 +101,7 @@ export default function Duvidas() {
             <>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                  <TabsList className="h-auto flex-wrap">
+                  <TabsList className="max-w-full justify-start overflow-x-auto">
                     <TabsTrigger value="aberta">Pendentes</TabsTrigger>
                     <TabsTrigger value="respondida">Respondidas</TabsTrigger>
                     <TabsTrigger value="arquivada">Arquivadas</TabsTrigger>

@@ -577,7 +577,7 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
           return (
             <>
               <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                <TabsList className="h-auto flex-wrap">
+                <TabsList className="max-w-full justify-start overflow-x-auto">
                   <TabsTrigger value="todas">Todas</TabsTrigger>
                   <TabsTrigger value="rascunho">Rascunhos</TabsTrigger>
                   <TabsTrigger value="publicada">Publicadas</TabsTrigger>
@@ -603,7 +603,7 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
                     <li key={a.id}>
                       <Card>
                         <CardContent className="flex flex-wrap items-start gap-4">
-                          <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          <div className="flex min-w-[min(100%,280px)] flex-1 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant={a.status === 'publicada' ? 'green' : a.status === 'encerrada' ? 'neutro' : 'outline'}>
                                 {ROTULO_STATUS_ATIVIDADE[a.status]}

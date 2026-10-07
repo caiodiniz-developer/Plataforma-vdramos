@@ -341,7 +341,7 @@ export function Avisos() {
                     <li key={a.id}>
                       <Card>
                         <CardContent className="flex flex-wrap items-start gap-4">
-                          <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          <div className="flex min-w-[min(100%,280px)] flex-1 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant="outline">{a.turma_id ? `Turma ${codigoDaTurma.get(a.turma_id) ?? ''}` : 'Todos os alunos'}</Badge>
                               <span className="font-mono text-xs text-muted-foreground">{formatarDataHora(a.created_at, FUSO)}</span>

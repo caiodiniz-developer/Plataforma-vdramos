@@ -43,7 +43,7 @@ function Quando({ em }: { em: string }) {
 function Abas({ aluno, perfil, children }: { aluno: AlunoDoProfessor; perfil: PerfilDoAluno; children: React.ReactNode }) {
   return (
     <Tabs defaultValue="respostas" className="gap-5">
-      <TabsList className="h-auto flex-wrap">
+      <TabsList className="max-w-full justify-start overflow-x-auto">
         <TabsTrigger value="respostas">Respostas</TabsTrigger>
         <TabsTrigger value="duvidas">Dúvidas</TabsTrigger>
         <TabsTrigger value="feedbacks">Feedbacks</TabsTrigger>
@@ -181,7 +181,7 @@ export default function AlunoPerfil() {
             <Vazio icone={UserXIcon} titulo="Aluno não encontrado" texto="Ele pode ter sido removido." />
           ) : (
             <>
-              <CabecalhoDaPagina rotulo={`Turma ${aluno.turma_codigo}`} titulo={aluno.nome ?? 'Sem nome'}>
+              <CabecalhoDaPagina rotulo="Perfil do aluno" titulo={aluno.nome ?? 'Sem nome'}>
                 <Badge variant={VARIANTE_SITUACAO[aluno.situacao]}>{ROTULO_SITUACAO[aluno.situacao]}</Badge>
               </CabecalhoDaPagina>
 
