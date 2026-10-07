@@ -172,8 +172,8 @@ function PreviaDaSala() {
 export function SalaInterativa({ numero }: { numero?: string }) {
   const raiz = useRef<HTMLElement>(null)
 
-  useMovimento(raiz, ({ desktop, alto }, q) => {
-    const fixa = desktop && alto
+  useMovimento(raiz, ({ completo, desktop, alto }, q) => {
+    const fixa = completo && desktop && alto
     const [relogio] = q('[data-relogio]')
     const [agora] = q('[data-agora]')
     const [votos] = q('[data-votos]')
