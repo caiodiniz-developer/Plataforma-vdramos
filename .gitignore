@@ -18,3 +18,9 @@ coverage/
 
 # Credenciais dos usuários de exemplo (nunca versionar)
 USERS.md
+
+# Playwright
+e2e/.resultados/
+e2e/capturas/
+playwright-report/
+test-results/
