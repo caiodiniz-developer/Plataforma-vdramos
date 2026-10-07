@@ -108,9 +108,15 @@ export default function Entrar() {
     evento.preventDefault()
     if (codigo.length !== 6) return setErro('Informe o código de 6 dígitos.')
     void executar(async () => {
-      const codigoTurma = await confirmarCodigo(ids, codigo)
-      recarregar()
-      navegar(`/aluno/turmas/${codigoTurma}`, { replace: true })
+      try {
+        const codigoTurma = await confirmarCodigo(ids, codigo)
+        await recarregar()
+        navegar(`/aluno/turmas/${codigoTurma}`, { replace: true })
+      } catch (falha) {
+        // Campo cheio não aceita novos dígitos: limpa para o aluno digitar de novo.
+        setCodigo('')
+        throw falha
+      }
     })
   }
 
