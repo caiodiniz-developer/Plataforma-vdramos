@@ -25,6 +25,16 @@ const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
 const EntrarAdmin = lazy(() => import('@/paginas/admin/Entrar'))
 const Painel = lazy(() => import('@/paginas/admin/Painel'))
 const MensagensDeContato = lazy(() => import('@/paginas/admin/MensagensDeContato'))
+const AlunosAdmin = lazy(() => import('@/paginas/admin/Alunos'))
+const AlunoPerfil = lazy(() => import('@/paginas/admin/AlunoPerfil'))
+const TurmasAdmin = lazy(() => import('@/paginas/admin/Turmas'))
+const ConteudosAdmin = lazy(() => import('@/paginas/admin/Conteudos'))
+const AtividadesAdmin = lazy(() => import('@/paginas/admin/Atividades').then((m) => ({ default: m.Atividades })))
+const QuestoesAdmin = lazy(() => import('@/paginas/admin/Atividades').then((m) => ({ default: m.Questoes })))
+const DuvidasAdmin = lazy(() => import('@/paginas/admin/Duvidas'))
+const ConversasAdmin = lazy(() => import('@/paginas/admin/Comunicacao').then((m) => ({ default: m.Conversas })))
+const FeedbacksAdmin = lazy(() => import('@/paginas/admin/Comunicacao').then((m) => ({ default: m.Feedbacks })))
+const AvisosAdmin = lazy(() => import('@/paginas/admin/Comunicacao').then((m) => ({ default: m.Avisos })))
 const NaoEncontrada = lazy(() => import('@/paginas/NaoEncontrada'))
 
 /**
@@ -98,6 +108,16 @@ function App() {
               }
             >
               <Route index element={<Painel />} />
+              <Route path="alunos" element={<AlunosAdmin />} />
+              <Route path="alunos/:id" element={<AlunoPerfil />} />
+              <Route path="turmas" element={<TurmasAdmin />} />
+              <Route path="conteudos" element={<ConteudosAdmin />} />
+              <Route path="atividades" element={<AtividadesAdmin />} />
+              <Route path="questoes" element={<QuestoesAdmin />} />
+              <Route path="duvidas" element={<DuvidasAdmin />} />
+              <Route path="conversas" element={<ConversasAdmin />} />
+              <Route path="feedbacks" element={<FeedbacksAdmin />} />
+              <Route path="avisos" element={<AvisosAdmin />} />
               <Route path="mensagens" element={<MensagensDeContato />} />
             </Route>
             <Route path="*" element={<NaoEncontrada />} />

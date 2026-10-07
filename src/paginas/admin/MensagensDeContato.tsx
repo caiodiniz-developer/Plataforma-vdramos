@@ -31,7 +31,7 @@ export default function MensagensDeContato() {
   return (
     <div className="flex max-w-[860px] flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <p className="eyebrow text-muted-foreground">Landing</p>
+        <p className="eyebrow text-muted-foreground">Site</p>
         <h1 className="text-[28px] md:text-[36px]">Mensagens de contato</h1>
       </div>
 
