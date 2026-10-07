@@ -154,8 +154,12 @@
   }
 
   html {
-    scroll-behavior: smooth;
     scroll-padding-top: 5rem;
+  }
+
+  /* Rolagem suave do CSS só no nível completo (e nunca junto com o Lenis). */
+  html[data-movimento='completo']:not(.lenis) {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -199,16 +203,31 @@
     outline-offset: 2px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-
+  /*
+   * Nível de movimento (`src/lib/nivelDeMovimento.ts`), marcado no <html> antes
+   * da primeira pintura. Só o nível "nenhum" zera animações e transições: no
+   * "essencial" (padrão de quem pede movimento reduzido no sistema) hovers e
+   * transições de cor continuam.
+   */
+  html[data-movimento='nenhum'] {
     *,
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Sem JavaScript o atributo não existe: aí vale o pedido do sistema. */
+  @media (prefers-reduced-motion: reduce) {
+    html:not([data-movimento]) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   }
 }
