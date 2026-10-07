@@ -38,3 +38,7 @@ verify_jwt = false
 
 [functions.excluir-conta]
 verify_jwt = true
+
+# Confere a sessao e o papel admin dentro da funcao.
+[functions.admin-alunos]
+verify_jwt = true
