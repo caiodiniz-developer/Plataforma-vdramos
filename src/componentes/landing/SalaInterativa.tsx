@@ -228,7 +228,7 @@ export function SalaInterativa({ numero }: { numero?: string }) {
       .fromTo(q('[data-barra]'), { scaleX: 0 }, { scaleX: 1, duration: 1.2, stagger: 0.2 }, entrada(2) + 0.5)
       .fromTo(q('[data-cartao="materiais"]'), fechado, aberto, entrada(3))
 
-    if (!fixa) linha.timeScale(DURACAO / 5)
+    if (!fixa) linha.timeScale(DURACAO / 3.5)
     mostrar(0)
     votos.textContent = '+0'
 
