@@ -28,6 +28,8 @@ export function ligarRolagemSuave(): () => void {
     prevent: (no) => document.body.hasAttribute('data-scroll-locked') || no.closest(SELETOR_NATIVO) !== null,
   })
   lenis = instancia
+  // Marca própria no <html>: o CSS desliga a rolagem suave nativa enquanto o Lenis está ligado.
+  document.documentElement.dataset.rolagemSuave = ''
 
   const avancar = (tempo: number) => instancia.raf(tempo * 1000)
   instancia.on('scroll', ScrollTrigger.update)
@@ -39,7 +41,18 @@ export function ligarRolagemSuave(): () => void {
     gsap.ticker.lagSmoothing(500, 33)
     instancia.destroy()
     if (lenis === instancia) lenis = null
+    limparMarcas()
+    // O Lenis tem um temporizador interno (fim da rolagem) que pode recolocar a
+    // classe depois de destruído: limpa de novo quando ele já tiver passado.
+    window.setTimeout(limparMarcas, 600)
   }
+}
+
+/** Tira do <html> as marcas da rolagem suave, se nenhuma instância estiver ligada. */
+function limparMarcas() {
+  if (lenis) return
+  delete document.documentElement.dataset.rolagemSuave
+  document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped', 'lenis-autoToggle')
 }
 
 export function rolagemSuaveAtiva(): boolean {

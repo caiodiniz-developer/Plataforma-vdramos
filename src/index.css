@@ -168,7 +168,7 @@
   }
 
   /* Rolagem suave do CSS só no nível completo (e nunca junto com o Lenis). */
-  html[data-movimento='completo']:not(.lenis) {
+  html[data-movimento='completo']:not([data-rolagem-suave]) {
     scroll-behavior: smooth;
   }
 
