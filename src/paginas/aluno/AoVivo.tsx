@@ -15,6 +15,7 @@ import { MuralDePerguntas } from '@/componentes/sala/MuralDePerguntas'
 import { assinarSala, buscarSala, type AtividadeResumida, type EstadoDaConexao, type Sala } from '@/dados/sala'
 import { ROTULO_TIPO_ATIVIDADE } from '@/dominio/atividade'
 import { useConsulta } from '@/hooks/useConsulta'
+import { useTelaLarga } from '@/hooks/useTelaLarga'
 
 function ListaDeAtividades({ atividades, aoAbrir }: { atividades: AtividadeResumida[]; aoAbrir: (id: string) => void }) {
   const visiveis = atividades.filter((a) => a.status !== 'rascunho')
@@ -49,6 +50,7 @@ function ListaDeAtividades({ atividades, aoAbrir }: { atividades: AtividadeResum
 export default function AoVivo() {
   const { codigo = '' } = useParams()
   const { dados, carregando, erro, recarregar } = useConsulta<Sala>(() => buscarSala(codigo), [codigo])
+  const telaLarga = useTelaLarga()
   const [conexao, setConexao] = useState<EstadoDaConexao>('conectado')
   const [escolhida, setAtividadeAberta] = useState<string | null>(null)
   const [dispensadas, setDispensadas] = useState<Set<string>>(new Set())
@@ -142,8 +144,12 @@ export default function AoVivo() {
               </Alert>
             )}
 
-            {/* Celular: abas. Desktop: perguntas e mensagens lado a lado, atividades abaixo. */}
-            <Tabs defaultValue="perguntas" className="md:hidden">
+            {/*
+              Celular: abas. Desktop: perguntas e mensagens lado a lado, atividades
+              abaixo. Só um dos dois é montado, para não duplicar formulários.
+            */}
+            {!telaLarga && (
+            <Tabs defaultValue="perguntas">
               <TabsList className="mb-4 w-full">
                 <TabsTrigger value="perguntas">Perguntas</TabsTrigger>
                 <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
@@ -165,8 +171,10 @@ export default function AoVivo() {
                 <ListaDeAtividades atividades={dados.atividades} aoAbrir={setAtividadeAberta} />
               </TabsContent>
             </Tabs>
+            )}
 
-            <div className="hidden gap-8 md:grid md:grid-cols-[1.3fr_1fr]">
+            {telaLarga && (
+            <div className="grid grid-cols-[1.3fr_1fr] gap-8">
               <section aria-labelledby="titulo-perguntas" className="flex flex-col gap-4">
                 <h2 id="titulo-perguntas" className="text-[22px]">
                   Perguntas
@@ -192,6 +200,7 @@ export default function AoVivo() {
                 <ListaDeAtividades atividades={dados.atividades} aoAbrir={setAtividadeAberta} />
               </section>
             </div>
+            )}
           </>
         )}
       </main>

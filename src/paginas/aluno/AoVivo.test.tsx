@@ -99,6 +99,8 @@ describe('Sala ao vivo (aluno)', () => {
     buscarSala.mockResolvedValue(sala())
     abrir()
 
+    // No jsdom a tela é estreita: a sala usa abas, uma de cada vez.
+    await userEvent.click(await screen.findByRole('tab', { name: 'Mensagens' }))
     const [feed] = await screen.findAllByRole('list', { name: 'Mensagens da turma' })
     const itens = within(feed).getAllByRole('listitem')
     expect(itens[0].textContent).toContain('Intervalo de 15 minutos.')
