@@ -78,7 +78,7 @@ export function LayoutAdmin() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="plataforma flex min-h-screen flex-col md:flex-row">
       <aside className="hidden w-64 shrink-0 flex-col gap-8 border-r-2 bg-card px-4 py-6 md:flex">
         <Link to="/" className="px-3 font-mono text-lg font-bold tracking-[-0.02em]">
           Vitor Ramos

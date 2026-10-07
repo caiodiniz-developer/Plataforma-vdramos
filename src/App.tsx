@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { LayoutAdmin } from '@/componentes/admin/LayoutAdmin'
+import { LayoutAluno } from '@/componentes/plataforma/LayoutAluno'
 import { PortaoDoTermo } from '@/componentes/PortaoDoTermo'
 import { Toaster } from '@/components/ui/sonner'
 import { ProvedorDeSessao, RotaProtegida } from '@/contextos/Sessao'
@@ -9,6 +10,15 @@ import { ProvedorDeSessao, RotaProtegida } from '@/contextos/Sessao'
 const Landing = lazy(() => import('@/paginas/Landing'))
 const Privacidade = lazy(() => import('@/paginas/Privacidade'))
 const Entrar = lazy(() => import('@/paginas/aluno/Entrar'))
+const Inicio = lazy(() => import('@/paginas/aluno/Inicio'))
+const Conteudos = lazy(() => import('@/paginas/aluno/Conteudos'))
+const ConteudoDetalhe = lazy(() => import('@/paginas/aluno/ConteudoDetalhe'))
+const Atividades = lazy(() => import('@/paginas/aluno/Atividades').then((m) => ({ default: m.Atividades })))
+const Questoes = lazy(() => import('@/paginas/aluno/Atividades').then((m) => ({ default: m.Questoes })))
+const Duvidas = lazy(() => import('@/paginas/aluno/Duvidas'))
+const Mensagens = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Mensagens })))
+const Feedback = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Feedback })))
+const Avisos = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Avisos })))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
 const AoVivo = lazy(() => import('@/paginas/aluno/AoVivo'))
 const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
@@ -30,6 +40,26 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/aluno/entrar" element={<Entrar />} />
+            <Route
+              path="/aluno"
+              element={
+                <RotaProtegida papel="aluno">
+                  <PortaoDoTermo>
+                    <LayoutAluno />
+                  </PortaoDoTermo>
+                </RotaProtegida>
+              }
+            >
+              <Route index element={<Inicio />} />
+              <Route path="conteudos" element={<Conteudos />} />
+              <Route path="conteudos/:id" element={<ConteudoDetalhe />} />
+              <Route path="atividades" element={<Atividades />} />
+              <Route path="questoes" element={<Questoes />} />
+              <Route path="duvidas" element={<Duvidas />} />
+              <Route path="mensagens" element={<Mensagens />} />
+              <Route path="feedback" element={<Feedback />} />
+              <Route path="avisos" element={<Avisos />} />
+            </Route>
             <Route
               path="/aluno/turmas/:codigo"
               element={

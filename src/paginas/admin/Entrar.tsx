@@ -40,7 +40,7 @@ export default function EntrarAdmin() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="plataforma flex min-h-screen flex-col">
       <header className="border-b-2">
         <div className="mx-auto flex max-w-[1080px] items-center justify-between px-4 py-3 md:px-10">
           <Link to="/" className="font-mono text-lg font-bold tracking-[-0.02em]">

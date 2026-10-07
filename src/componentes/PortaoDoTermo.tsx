@@ -53,14 +53,18 @@ export function PortaoDoTermo({ children }: { children: ReactNode }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[520px] flex-col justify-center px-4 py-12">
+    <main className="plataforma mx-auto flex min-h-screen w-full max-w-[520px] flex-col justify-center px-4 py-12">
       <Card>
         <CardHeader>
           <p className="eyebrow text-muted-foreground">Versão {VERSAO_TERMO_VIGENTE}</p>
           <CardTitle>
-            <h1 className="text-[22px]">O termo de uso mudou</h1>
+            <h1 className="text-[22px]">{dados.length === 0 ? 'Antes de começar' : 'O termo de uso mudou'}</h1>
           </CardTitle>
-          <CardDescription>Leia a nova versão e confirme o aceite para continuar.</CardDescription>
+          <CardDescription>
+            {dados.length === 0
+              ? 'Leia o termo de uso e confirme o aceite para acessar a plataforma.'
+              : 'Leia a nova versão e confirme o aceite para continuar.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="flex items-start gap-3">

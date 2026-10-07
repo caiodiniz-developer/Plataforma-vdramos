@@ -96,7 +96,7 @@ export default function AoVivo() {
   const tituloAtividade = dados.atividades.find((a) => a.id === atividadeAberta)?.titulo ?? 'Atividade'
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="plataforma flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b-2 bg-background">
         <div className="mx-auto flex max-w-[1080px] flex-wrap items-center gap-3 px-4 py-3 md:px-10">
           <Button asChild size="sm" variant="ghost">

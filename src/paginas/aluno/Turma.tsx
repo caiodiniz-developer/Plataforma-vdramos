@@ -110,7 +110,7 @@ export default function Turma() {
   const aoVivo = somenteLeitura ? undefined : turma.encontros.find((e) => e.sessao?.status === 'aberta')
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="plataforma flex min-h-screen flex-col">
       <Cabecalho turma={turma} turmas={turmas} />
       <main className="mx-auto flex w-full max-w-[1080px] flex-col gap-8 px-4 py-10 md:px-10 md:py-14">
         <div className="flex flex-col gap-4">
