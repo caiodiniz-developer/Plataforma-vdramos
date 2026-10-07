@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
+import { Assinatura } from '@/componentes/landing/Assinatura'
 import { Cabecalho, type Ancora } from '@/componentes/landing/Cabecalho'
 import { ChamadaFinal } from '@/componentes/landing/ChamadaFinal'
 import { Contato } from '@/componentes/landing/Contato'
@@ -133,7 +134,7 @@ export default function Landing() {
           </>
         )}
       </main>
-      <Rodape assinatura={pronto ? dados?.perfil.nome_exibicao : undefined} />
+      <Rodape>{pronto && dados && <Assinatura nome={dados.perfil.nome_exibicao} />}</Rodape>
     </div>
   )
 }
