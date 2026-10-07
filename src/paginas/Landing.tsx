@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { Cabecalho, type Ancora } from '@/componentes/landing/Cabecalho'
@@ -18,15 +18,17 @@ import { buscarLanding } from '@/dados/landing'
 import type { Assunto } from '@/dominio/contato'
 import { abasVisiveis, type TipoExperiencia } from '@/dominio/experiencia'
 import { useConsulta } from '@/hooks/useConsulta'
+import { ScrollTrigger } from '@/lib/movimento'
 
 function Carregando() {
   return (
-    <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6 px-4 py-14 md:px-10" aria-busy="true">
+    <div className="conteiner-landing flex flex-col gap-8 py-8" aria-busy="true">
       <span className="sr-only">Carregando</span>
-      <Skeleton className="h-4 w-40" />
-      <Skeleton className="h-16 w-2/3" />
-      <Skeleton className="h-24 w-full max-w-[520px]" />
-      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-4 w-48" />
+      <Skeleton className="h-[26svh] w-full" />
+      <Skeleton className="h-3 w-full" />
+      <Skeleton className="h-28 w-full max-w-140" />
+      <Skeleton className="h-12 w-40" />
     </div>
   )
 }
@@ -38,13 +40,38 @@ function numerador() {
 }
 
 /**
+ * Quando o conteúdo da landing termina de montar: leva à seção do endereço
+ * (`/#contato` aberto direto, já que as seções só existem depois da carga) e
+ * manda o ScrollTrigger remedir a página quando as fontes chegam, porque a
+ * troca de fonte muda a altura dos títulos.
+ */
+function useConteudoPronto(pronto: boolean) {
+  useEffect(() => {
+    if (!pronto) return
+    const id = decodeURIComponent(window.location.hash.slice(1))
+    if (id) document.getElementById(id)?.scrollIntoView()
+
+    let ativo = true
+    void document.fonts?.ready.then(() => {
+      if (ativo) ScrollTrigger.refresh()
+    })
+    return () => {
+      ativo = false
+    }
+  }, [pronto])
+}
+
+/**
  * PRD F1: landing pública. Ordem: hero, faixa de temas, frentes de trabalho,
- * experiência, sala de aula interativa, galeria, chamada final e contato.
+ * experiência, sala de aula interativa, galeria, chamada final, contato e
+ * rodapé com a assinatura. As seções alternam Papel, Tinta e azul.
  */
 export default function Landing() {
   const { dados, carregando, erro, recarregar } = useConsulta(buscarLanding, [])
   const [aba, setAba] = useState<TipoExperiencia>('profissional')
   const [assunto, setAssunto] = useState<Assunto | undefined>()
+  const pronto = Boolean(dados) && !carregando
+  useConteudoPronto(pronto)
 
   const abas = dados ? abasVisiveis(dados.experiencias) : []
   const ancoras: Ancora[] = [
@@ -77,7 +104,7 @@ export default function Landing() {
       <main id="conteudo">
         {carregando && <Carregando />}
         {erro && (
-          <div className="mx-auto max-w-[1080px] px-4 py-14 md:px-10">
+          <div className="conteiner-landing py-14">
             <EstadoDeErro mensagem={erro} aoTentarDeNovo={recarregar} />
           </div>
         )}
@@ -85,17 +112,15 @@ export default function Landing() {
           <>
             <Hero perfil={dados.perfil} />
             <FaixaDeTemas />
-            <Secao id="frentes" numero={proximo()} titulo="Frentes de trabalho">
+            <Secao id="frentes" numero={proximo()} titulo="Frentes de trabalho" colado>
               <FrentesDeTrabalho aoEscolher={setAssunto} />
             </Secao>
             {abas.length > 0 && (
-              <Secao id="experiencia" numero={proximo()} titulo="Experiência">
+              <Secao id="experiencia" numero={proximo()} titulo="Experiência" className="border-t-2" colado>
                 <Experiencias experiencias={dados.experiencias} aba={aba} aoTrocarAba={setAba} />
               </Secao>
             )}
-            <Secao id="sala-de-aula" numero={proximo()} titulo="Sala de aula interativa">
-              <SalaInterativa />
-            </Secao>
+            <SalaInterativa numero={proximo()} />
             {GALERIA.length > 0 && (
               <Secao id="galeria" numero={proximo()} titulo="Em sala e em projetos">
                 <Galeria fotos={GALERIA} />
@@ -108,7 +133,7 @@ export default function Landing() {
           </>
         )}
       </main>
-      <Rodape />
+      <Rodape assinatura={pronto ? dados?.perfil.nome_exibicao : undefined} />
     </div>
   )
 }
