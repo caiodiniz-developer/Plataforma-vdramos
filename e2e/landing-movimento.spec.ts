@@ -2,18 +2,17 @@ import { expect, test, type Browser, type Page } from '@playwright/test'
 
 /**
  * Movimento da landing (GSAP, ScrollTrigger e Lenis) num navegador real: o que
- * a animação não pode quebrar. Níveis de movimento e o controle que os troca,
- * âncoras, rolagem suave, limpeza ao trocar de rota, a aula que passa com a
- * rolagem e a largura da página.
+ * a animação não pode quebrar. Âncoras, rolagem suave, limpeza ao trocar de
+ * rota, a aula que passa com a rolagem e a largura da página — e a decisão do
+ * dono de animar sempre por inteiro, sem controle de nível.
  */
 const previa = (page: Page) => page.getByRole('group', { name: 'Prévia ilustrativa da sala de aula' })
 const fixadores = (page: Page) => page.locator('.pin-spacer')
-const nivelNoHtml = (page: Page) => page.locator('html')
 
 async function abrir(page: Page, endereco = '/') {
   await page.goto(endereco)
   await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
-  // No nível completo, a primeira carga da sessão tem a abertura: espera a cortina sair.
+  // A primeira carga da sessão tem a abertura: espera a cortina sair.
   await expect(page.locator('[data-abertura]')).toHaveCount(0)
 }
 
@@ -33,80 +32,53 @@ async function rolarPara(page: Page, y: number | 'fim') {
   }, y)
 }
 
-test.describe('níveis de movimento', () => {
-  test('sem pedido do sistema, o nível é completo', async ({ page }) => {
-    await abrir(page)
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'completo')
-    await expect(page.getByRole('button', { name: 'Animações completas', exact: true })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-  })
-
-  test('com o sistema em redução, o padrão é essencial e a pessoa liga o completo pelo controle', async ({
-    browser,
-  }) => {
+test.describe('movimento sempre completo', () => {
+  test('com o sistema em movimento reduzido, a landing anima do mesmo jeito', async ({ browser, isMobile }) => {
     const { contexto, page } = await abrirComSistemaReduzido(browser)
-    const completas = page.getByRole('button', { name: 'Animações completas', exact: true })
-    const essenciais = page.getByRole('button', { name: 'Animações essenciais', exact: true })
 
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'essencial')
-    await expect(essenciais).toHaveAttribute('aria-pressed', 'true')
-    await expect(completas).toHaveAttribute('aria-pressed', 'false')
+    // Letras do nome divididas e animadas: o hero entrou com movimento.
+    await expect.poll(() => page.locator('h1 div').count()).toBeGreaterThan(0)
+    // A faixa de temas está rolando sozinha.
+    const posicao = () =>
+      page.locator('[data-trilho]').evaluate((el) => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41)
+    const antes = await posicao()
+    await expect.poll(posicao).not.toBe(antes)
 
-    await completas.click()
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'completo')
-    await expect(completas).toHaveAttribute('aria-pressed', 'true')
-
-    // A escolha vence o sistema e continua valendo depois de recarregar.
-    await page.reload()
-    await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'completo')
-    expect(await page.evaluate(() => window.localStorage.getItem('vr:movimento'))).toBe('completo')
+    if (!isMobile) {
+      // Em tela larga e alta: seção da sala fixada e rolagem suave ligadas.
+      await expect(fixadores(page)).toHaveCount(1)
+      await expect(page.locator('html')).toHaveAttribute('data-rolagem-suave', '')
+      const topo = await page.locator('#sala-de-aula').evaluate((el) => el.getBoundingClientRect().top + window.scrollY)
+      await rolarPara(page, topo + page.viewportSize()!.height * 1.1)
+      await expect(previa(page).getByText('20:45', { exact: true })).toBeVisible()
+    }
     await contexto.close()
   })
 
-  test('no topo do hero há um atalho para ligar as animações completas quando o sistema reduz', async ({
-    browser,
-  }) => {
+  test('não existe controle de animações na página', async ({ browser }) => {
     const { contexto, page } = await abrirComSistemaReduzido(browser)
-    const atalho = page.getByRole('button', { name: 'Ligar animações completas' })
-    await atalho.click()
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'completo')
-    // Depois da escolha, o atalho sai: o controle do rodapé continua lá.
-    await expect(atalho).toHaveCount(0)
+    await expect(page.getByRole('group', { name: /Animações/i })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /animaç/i })).toHaveCount(0)
+    await expect(page.getByText(/animaç/i)).toHaveCount(0)
     await contexto.close()
   })
 
-  test('desligar as animações desfaz tudo na hora: nada fixado, nada escondido', async ({ page }) => {
-    await abrir(page)
-    await page.getByRole('button', { name: 'Animações desligadas', exact: true }).click()
-    await expect(nivelNoHtml(page)).toHaveAttribute('data-movimento', 'nenhum')
-    await expect(fixadores(page)).toHaveCount(0)
-    await expect(previa(page).getByText('22:45', { exact: true })).toBeAttached()
-    // O formulário fica de fora: os controles do Radix têm campos nativos escondidos de propósito.
-    const escondidos = await page.evaluate(
-      () =>
-        [...document.querySelectorAll<HTMLElement>('main *, footer *')].filter(
-          (el) => !el.closest('form') && (el.style.opacity === '0' || el.style.clipPath !== '' || el.style.transform !== ''),
-        ).length,
-    )
-    expect(escondidos).toBe(0)
-  })
-
-  test('no nível essencial, a prévia da sala toca sozinha e termina completa, sem fixar a seção', async ({
+  test('uma escolha de nível guardada por uma versão anterior é apagada e não tem efeito', async ({
     browser,
+    isMobile,
   }) => {
-    const { contexto, page } = await abrirComSistemaReduzido(browser)
-    await previa(page).scrollIntoViewIfNeeded()
-    await expect(previa(page).getByText('22:45', { exact: true })).toBeAttached({ timeout: 10_000 })
-    await expect(previa(page).getByText('+12')).toBeAttached()
-    await expect(fixadores(page)).toHaveCount(0)
+    const contexto = await browser.newContext()
+    await contexto.addInitScript(() => window.localStorage.setItem('vr:movimento', 'nenhum'))
+    const page = await contexto.newPage()
+    await abrir(page)
+    expect(await page.evaluate(() => window.localStorage.getItem('vr:movimento'))).toBeNull()
+    await expect.poll(() => page.locator('h1 div').count()).toBeGreaterThan(0)
+    if (!isMobile) await expect(fixadores(page)).toHaveCount(1)
     await contexto.close()
   })
 })
 
-test.describe('movimento da landing (nível completo)', () => {
+test.describe('movimento da landing', () => {
   test('a abertura aparece só na primeira carga da sessão e pode ser pulada', async ({ page }) => {
     await page.goto('/')
     const cortina = page.locator('[data-abertura]')
