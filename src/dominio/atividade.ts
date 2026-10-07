@@ -1,4 +1,4 @@
-export type TipoAtividade = 'quiz' | 'pesquisa_satisfacao' | 'enquete'
+export type TipoAtividade = 'quiz' | 'pesquisa_satisfacao' | 'enquete' | 'questao' | 'licao'
 export type AlvoAtividade = 'teoria' | 'pratica' | 'encontro' | 'curso'
 export type StatusAtividade = 'rascunho' | 'publicada' | 'encerrada'
 export type MostrarResultado = 'nunca' | 'apos_responder' | 'apos_encerrar'
@@ -30,6 +30,8 @@ export const ROTULO_TIPO_ATIVIDADE: Record<TipoAtividade, string> = {
   quiz: 'Quiz',
   pesquisa_satisfacao: 'Pesquisa de satisfação',
   enquete: 'Enquete',
+  questao: 'Questão',
+  licao: 'Atividade',
 }
 
 export const ROTULO_STATUS_ATIVIDADE: Record<StatusAtividade, string> = {

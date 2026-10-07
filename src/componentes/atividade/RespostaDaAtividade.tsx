@@ -10,10 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
+import { Markdown } from '@/componentes/Markdown'
 import {
   buscarAtividade,
   responderAtividade,
-  type AtividadeParaAluno,
   type ItemParaAluno,
   type RespostaDoItem,
 } from '@/dados/sala'
@@ -150,11 +150,11 @@ function CampoDoItem({
 }
 
 /** Correção (quiz) e resultado agregado, quando a regra permite. */
-function ResultadoDoItem({ atividade, item }: { atividade: AtividadeParaAluno; item: ItemParaAluno }) {
+function ResultadoDoItem({ item }: { item: ItemParaAluno }) {
   const correta = item.minha_resposta?.correta
   return (
     <div className="flex flex-col gap-3">
-      {atividade.tipo === 'quiz' && correta !== null && correta !== undefined && (
+      {correta !== null && correta !== undefined && (
         <Badge variant={correta ? 'green' : 'orange'}>
           {correta ? <CheckIcon aria-hidden="true" /> : <XIcon aria-hidden="true" />}
           {correta ? 'Correta' : 'Incorreta'}
@@ -262,6 +262,12 @@ export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId:
         <Progress value={(restante / atividade.tempo_limite_s) * 100} className="h-1.5" aria-hidden="true" />
       )}
 
+      {atividade.instrucoes_md && (
+        <div className="border-l-2 border-primary bg-muted py-3 pr-3 pl-4">
+          <Markdown className="text-[15px]">{atividade.instrucoes_md}</Markdown>
+        </div>
+      )}
+
       <ol className="flex flex-col gap-6">
         {atividade.itens.map((item) => (
           <li key={item.id} className="flex flex-col gap-3 border-t border-divisor pt-4 first:border-t-0 first:pt-0">
@@ -270,7 +276,7 @@ export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId:
               {!item.obrigatorio && <span className="font-medium text-muted-foreground"> (opcional)</span>}
             </p>
             {atividade.respondida || atividade.status === 'encerrada' ? (
-              <ResultadoDoItem atividade={atividade} item={item} />
+              <ResultadoDoItem item={item} />
             ) : (
               <CampoDoItem
                 item={item}

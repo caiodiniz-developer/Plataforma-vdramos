@@ -203,6 +203,9 @@ export type AtividadeParaAluno = {
   sessao_ao_vivo_id: string | null
   respondida: boolean
   mostra_resultado: boolean
+  descricao?: string | null
+  instrucoes_md?: string | null
+  prazo_em?: string | null
   itens: ItemParaAluno[]
 }
 
