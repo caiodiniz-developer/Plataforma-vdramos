@@ -17,7 +17,7 @@ export function clienteAtual() {
  * Carrega uma Edge Function de verdade (`supabase/functions/<nome>/index.ts`)
  * com `Deno` simulado e devolve o tratador que ela registrou em `Deno.serve`.
  */
-export async function carregarFuncao(nome: 'acesso-aluno' | 'contato' | 'excluir-conta', env: Record<string, string> = {}) {
+export async function carregarFuncao(nome: 'acesso-aluno' | 'admin-alunos' | 'contato' | 'excluir-conta', env: Record<string, string> = {}) {
   const banco = (estado.__bancoFalso = new BancoFalso())
   let tratador: Tratador | undefined
   const variaveis: Record<string, string> = {
@@ -73,9 +73,13 @@ export function semearTurma(banco: BancoFalso) {
   return { turma, planejada, a1, a2, inativo }
 }
 
-/** Inscreve um perfil já existente no ID autorizado. */
+/** Senha usada pelas contas criadas nos testes (valor de mentira). */
+export const SENHA_DE_TESTE = 'Aluno' + '@' + '123'
+
+/** Cria a conta (com senha) de um ID autorizado e o inscreve na turma. */
 export function inscrever(banco: BancoFalso, autorizado: Record<string, unknown>, email: string, nome = 'Ana Souza') {
   const id = banco.idDoUsuario(email)
+  banco.senhas.set(email, SENHA_DE_TESTE)
   if (!banco.linhas('perfil').some((p) => p.id === id)) banco.inserir('perfil', { id, nome, email, papel: 'aluno' })
   return banco.inserir('inscricao', {
     aluno_autorizado_id: autorizado.id,

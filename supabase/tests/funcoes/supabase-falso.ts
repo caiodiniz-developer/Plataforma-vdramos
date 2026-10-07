@@ -12,21 +12,21 @@ type Resposta<T> = { data: T; error: { message: string; code?: string } | null }
 /** Colunas únicas que as funções dependem para não duplicar registros. */
 const UNICOS: Record<string, string[]> = {
   inscricao: ['aluno_autorizado_id'],
-  cadastro_pendente: ['aluno_autorizado_id'],
   perfil: ['id'],
 }
 
 export class BancoFalso {
   tabelas: Record<string, Linha[]> = {}
-  otpsEnviados: { email: string; criarUsuario: boolean; nome?: string }[] = []
+  /** Senha de cada conta, por e-mail (o Auth real guarda só o hash). */
+  senhas = new Map<string, string>()
+  sessoesEncerradas: string[] = []
   usuariosExcluidos: string[] = []
-  /** Código que o "e-mail" entregaria; `verifyOtp` só aceita este. */
-  codigoValido = '123456'
   /** Usuário devolvido pelo Auth para um e-mail (id estável por e-mail). */
   usuarios = new Map<string, string>()
   /** Usuário do JWT de quem chama (para `auth.getUser`). */
   usuarioLogado: { id: string } | null = null
-  falharEnvioDeOtp = false
+  /** Simula falha do Auth ao criar usuário. */
+  falharCriacaoDeUsuario = false
   private sequencia = 0
 
   linhas(tabela: string): Linha[] {
@@ -179,18 +179,9 @@ export function criarClienteFalso(banco: BancoFalso) {
     },
 
     auth: {
-      async signInWithOtp(params: { email: string; options?: { shouldCreateUser?: boolean; data?: { nome?: string } } }) {
-        if (banco.falharEnvioDeOtp) return { data: null, error: { message: 'smtp fora do ar' } }
-        banco.otpsEnviados.push({
-          email: params.email,
-          criarUsuario: params.options?.shouldCreateUser ?? true,
-          nome: params.options?.data?.nome,
-        })
-        return { data: {}, error: null }
-      },
-      async verifyOtp(params: { email: string; token: string }) {
-        if (params.token !== banco.codigoValido) {
-          return { data: { session: null, user: null }, error: { message: 'Token has expired or is invalid' } }
+      async signInWithPassword(params: { email: string; password: string }) {
+        if (!banco.senhas.has(params.email) || banco.senhas.get(params.email) !== params.password) {
+          return { data: { session: null, user: null }, error: { message: 'Invalid login credentials' } }
         }
         return {
           data: {
@@ -206,7 +197,26 @@ export function criarClienteFalso(banco: BancoFalso) {
           : { data: { user: null }, error: { message: 'sem sessão' } }
       },
       admin: {
+        async createUser(params: { email: string; password: string }) {
+          if (banco.falharCriacaoDeUsuario || banco.senhas.has(params.email)) {
+            return { data: { user: null }, error: { message: 'A user with this email address has already been registered' } }
+          }
+          banco.senhas.set(params.email, params.password)
+          return { data: { user: { id: banco.idDoUsuario(params.email), email: params.email } }, error: null }
+        },
+        async updateUserById(id: string, attrs: { password?: string }) {
+          const email = [...banco.usuarios.entries()].find(([, uid]) => uid === id)?.[0]
+          if (!email) return { data: null, error: { message: 'User not found' } }
+          if (attrs.password) banco.senhas.set(email, attrs.password)
+          return { data: {}, error: null }
+        },
+        async signOut(token: string) {
+          banco.sessoesEncerradas.push(token)
+          return { data: null, error: null }
+        },
         async deleteUser(id: string) {
+          const email = [...banco.usuarios.entries()].find(([, uid]) => uid === id)?.[0]
+          if (email) banco.senhas.delete(email)
           banco.usuariosExcluidos.push(id)
           // Cascata do banco real: apagar o usuário leva perfil e inscrições.
           banco.tabelas.perfil = banco.linhas('perfil').filter((p) => p.id !== id)
