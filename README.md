@@ -86,9 +86,27 @@ Pontos de atenção antes de ir para produção:
 
 ## Testes
 
-Os testes de banco não precisam de Docker: rodam as migrations num Postgres em memória
-(PGlite) com papéis e `auth.uid()` simulados, e exercitam as políticas de RLS como aluno,
-admin e visitante. As Edge Functions (Deno) ainda não têm teste automatizado.
+| Comando | O que cobre |
+| --- | --- |
+| `npm test` | Regras de negócio, telas (jsdom), banco e Edge Functions |
+| `npm run test:e2e` | Navegador real (Chromium), em desktop e celular |
+
+- **Banco:** as migrations rodam num Postgres em memória (PGlite) com papéis e `auth.uid()`
+  simulados; os testes exercitam as políticas de RLS como aluno, admin e visitante. Não
+  precisa de Docker.
+- **Edge Functions:** o código real das três funções roda no Vitest com `Deno` e o Supabase
+  simulados em memória (`supabase/tests/funcoes`). Cobre o fluxo de cada função; não cobre o
+  envio real de e-mail nem o runtime do Deno.
+- **Ponta a ponta:** o Playwright sobe o build de produção em dois servidores. Um sem backend
+  (landing, rotas públicas, redirecionamentos) e outro com a API e o Realtime do Supabase
+  simulados na rede (entrada, turma, sala ao vivo, "Meus dados", painel do professor). Todas
+  as páginas passam por uma varredura de acessibilidade (axe, WCAG 2.1 AA).
+
+Na primeira vez, instale o navegador de teste: `npx playwright install chromium`.
+
+O que os testes **não** provam: a integração com um projeto Supabase de verdade (Auth, envio
+de e-mail, Realtime e Storage em produção). Isso só se confirma com o roteiro manual depois
+de configurar o backend.
 
 ## Como contribuir
 
