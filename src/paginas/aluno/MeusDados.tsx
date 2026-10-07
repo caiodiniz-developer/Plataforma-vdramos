@@ -23,7 +23,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { useSessao } from '@/contextos/Sessao'
 import { buscarMeusDados, excluirConta, exportarMeusDados, registrarConsentimento } from '@/dados/meus-dados'
-import { sair } from '@/dados/sessao'
 import { concedeu, consentimentoVigente, ROTULO_FINALIDADE } from '@/dominio/consentimento'
 import { formatarDataHora } from '@/dominio/tempo'
 import { useConsulta } from '@/hooks/useConsulta'
@@ -50,7 +49,7 @@ function Cartao({ titulo, descricao, children }: { titulo: string; descricao?: s
 export default function MeusDados() {
   const id = useId()
   const navegar = useNavigate()
-  const { recarregar: recarregarSessao } = useSessao()
+  const { encerrar } = useSessao()
   const { dados, carregando, erro, recarregar } = useConsulta(buscarMeusDados, [])
   const [salvando, setSalvando] = useState(false)
   const [baixando, setBaixando] = useState(false)
@@ -97,11 +96,8 @@ export default function MeusDados() {
     try {
       await excluirConta()
       toast.success('Conta excluída')
-      // Sai da tela protegida antes de encerrar a sessão; na ordem inversa, a
-      // rota protegida mandaria a pessoa para a tela de login.
-      navegar('/', { replace: true })
-      await sair()
-      await recarregarSessao()
+      // Encerra a sessão já apontando para o início, em vez da tela de login.
+      await encerrar('/')
     } catch (falha) {
       toast.error((falha as Error).message)
       setExcluindo(false)
