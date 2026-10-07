@@ -94,6 +94,8 @@ export type Simulacao = {
   naoTratadas: string[]
   /** Escritas (POST/PATCH/DELETE) numa tabela ou chamadas de uma rpc/função. */
   enviadas: (trecho: string) => Chamada[]
+  /** Passa a responder como este usuário (o que o Auth faz depois de um login). */
+  entrarComo: (usuario: Usuario) => void
   /** Empurra um evento do Realtime para os canais abertos. */
   emitirMudanca: (tabela: string) => void
   canaisAbertos: () => number
@@ -106,7 +108,8 @@ export type Simulacao = {
 export async function simularSupabase(page: Page, respostas: Respostas, usuario?: Usuario): Promise<Simulacao> {
   const chamadas: Chamada[] = []
   const naoTratadas: string[] = []
-  const sockets: { enviar: (mensagem: unknown) => void; topicos: Map<string, number[]> }[] = []
+  const sockets: { enviar: (topico: string, evento: string, payload: unknown, ref?: string | null, joinRef?: string | null) => void; topicos: Map<string, number[]> }[] = []
+  let atual = usuario
 
   if (usuario) {
     await page.addInitScript((sessao) => {
@@ -125,7 +128,11 @@ export async function simularSupabase(page: Page, respostas: Respostas, usuario?
     const [, area, , ...resto] = url.pathname.split('/')
 
     if (area === 'auth') {
-      if (resto[0] === 'user') return responder(route, 200, usuario ? sessaoDe(usuario).user : null)
+      if (resto[0] === 'user') {
+        return atual
+          ? responder(route, 200, sessaoDe(atual).user)
+          : responder(route, 401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' })
+      }
       if (resto[0] === 'logout') return responder(route, 204, undefined)
       if (resto[0] === 'token') {
         const corpo = chamada.corpo as { email?: string; password?: string }
@@ -181,23 +188,26 @@ export async function simularSupabase(page: Page, respostas: Respostas, usuario?
     return responder(route, 404, { message: 'sem resposta definida no teste' })
   })
 
-  // Realtime: protocolo Phoenix mínimo — aceita a entrada no canal e o heartbeat.
-  await page.routeWebSocket(/localhost:54399\/realtime/, (ws) => {
+  // Realtime: protocolo Phoenix (vsn 2.0.0), em que cada mensagem é a lista
+  // [join_ref, ref, topic, event, payload]. Aceita a entrada no canal e o heartbeat.
+  await page.routeWebSocket(new RegExp('localhost:54399/realtime'), (ws) => {
     const topicos = new Map<string, number[]>()
-    const enviar = (mensagem: unknown) => ws.send(JSON.stringify(mensagem))
+    const enviar = (topico: string, evento: string, payload: unknown, ref: string | null = null, joinRef: string | null = null) =>
+      ws.send(JSON.stringify([joinRef, ref, topico, evento, payload]))
     sockets.push({ enviar, topicos })
 
     ws.onMessage((bruta) => {
-      const m = JSON.parse(String(bruta)) as { topic: string; event: string; payload: Record<string, unknown>; ref: string; join_ref?: string }
-      if (m.event === 'phx_join') {
-        const config = (m.payload.config ?? {}) as { postgres_changes?: Record<string, unknown>[] }
+      const [joinRef, ref, topico, evento, payload] = JSON.parse(String(bruta)) as [string | null, string | null, string, string, Record<string, unknown>]
+      if (evento === 'phx_join') {
+        const config = (payload.config ?? {}) as { postgres_changes?: Record<string, unknown>[] }
+        // O cliente confere se o servidor devolveu os mesmos filtros que ele pediu.
         const mudancas = (config.postgres_changes ?? []).map((b, i) => ({ ...b, id: i + 1 }))
-        topicos.set(m.topic, mudancas.map((b) => b.id))
-        enviar({ topic: m.topic, event: 'phx_reply', ref: m.ref, join_ref: m.join_ref, payload: { status: 'ok', response: { postgres_changes: mudancas } } })
-        enviar({ topic: m.topic, event: 'system', ref: null, payload: { status: 'ok', message: 'Subscribed to PostgreSQL', channel: m.topic, extension: 'postgres_changes' } })
+        topicos.set(topico, mudancas.map((b) => b.id))
+        enviar(topico, 'phx_reply', { status: 'ok', response: { postgres_changes: mudancas } }, ref, joinRef)
+        enviar(topico, 'system', { status: 'ok', message: 'Subscribed to PostgreSQL', channel: topico, extension: 'postgres_changes' })
       } else {
         // heartbeat, access_token, phx_leave…
-        enviar({ topic: m.topic, event: 'phx_reply', ref: m.ref, payload: { status: 'ok', response: {} } })
+        enviar(topico, 'phx_reply', { status: 'ok', response: {} }, ref, joinRef)
       }
     })
   })
@@ -207,17 +217,15 @@ export async function simularSupabase(page: Page, respostas: Respostas, usuario?
     naoTratadas,
     enviadas: (trecho) => chamadas.filter((c) => c.metodo !== 'GET' && c.metodo !== 'HEAD' && c.caminho.includes(trecho)),
     canaisAbertos: () => sockets.reduce((total, s) => total + s.topicos.size, 0),
+    entrarComo: (novo) => {
+      atual = novo
+    },
     emitirMudanca: (tabela) => {
       for (const socket of sockets) {
         for (const [topico, ids] of socket.topicos) {
-          socket.enviar({
-            topic: topico,
-            event: 'postgres_changes',
-            ref: null,
-            payload: {
-              ids,
-              data: { type: 'INSERT', schema: 'public', table: tabela, commit_timestamp: new Date().toISOString(), columns: [], record: {}, errors: null },
-            },
+          socket.enviar(topico, 'postgres_changes', {
+            ids,
+            data: { type: 'INSERT', schema: 'public', table: tabela, commit_timestamp: new Date().toISOString(), columns: [], record: {}, errors: null },
           })
         }
       }
