@@ -33,6 +33,7 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@testing-library/dom": "^10.4.2",
