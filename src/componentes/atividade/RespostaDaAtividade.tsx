@@ -1,5 +1,6 @@
-import { CheckIcon, Loader2Icon, XIcon } from 'lucide-react'
+import { CheckIcon, Loader2Icon, PaperclipIcon, XIcon } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent } from 'react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -11,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { Markdown } from '@/componentes/Markdown'
+import { urlAssinada } from '@/dados/apoio'
 import {
   buscarAtividade,
   responderAtividade,
@@ -266,6 +268,23 @@ export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId:
         <div className="border-l-2 border-primary bg-muted py-3 pr-3 pl-4">
           <Markdown className="text-[15px]">{atividade.instrucoes_md}</Markdown>
         </div>
+      )}
+
+      {atividade.arquivo_path && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="self-start px-0"
+          onClick={() => {
+            urlAssinada(atividade.arquivo_path!)
+              .then((url) => window.open(url, '_blank', 'noopener,noreferrer'))
+              .catch((falha: Error) => toast.error(falha.message))
+          }}
+        >
+          <PaperclipIcon aria-hidden="true" />
+          Abrir arquivo da atividade
+        </Button>
       )}
 
       <ol className="flex flex-col gap-6">
