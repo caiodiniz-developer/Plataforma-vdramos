@@ -101,24 +101,68 @@ test.describe('landing', () => {
     }
   })
 
-  test('com movimento reduzido, o conteúdo aparece sem depender de animação', async ({ browser }) => {
+  /** Menor opacidade entre o elemento e todos os seus ancestrais. */
+  const opacidadeEfetiva = (el: Element) => {
+    let no: Element | null = el
+    let menor = 1
+    while (no) {
+      menor = Math.min(menor, Number(getComputedStyle(no).opacity))
+      no = no.parentElement
+    }
+    return menor
+  }
+
+  test('com as animações desligadas, o conteúdo aparece sem depender de animação', async ({ browser }) => {
+    // "Nenhum" é escolha da pessoa no controle de animações (guardada no navegador).
+    const contexto = await browser.newContext()
+    await contexto.addInitScript(() => window.localStorage.setItem('vr:movimento', 'nenhum'))
+    const page = await contexto.newPage()
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('data-movimento', 'nenhum')
+    // Sem rolar: o título de uma seção lá de baixo já precisa estar opaco.
+    const opacidade = await page.getByRole('heading', { level: 2, name: 'Contato' }).evaluate(opacidadeEfetiva)
+    expect(opacidade).toBe(1)
+    await expect(page.locator('.pin-spacer')).toHaveCount(0)
+    await contexto.close()
+  })
+
+  test('com movimento reduzido no sistema, a página anima no nível essencial e nada fica escondido', async ({
+    browser,
+  }) => {
     const contexto = await browser.newContext({ reducedMotion: 'reduce' })
     const page = await contexto.newPage()
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
-    // Sem rolar: o título de uma seção lá de baixo já precisa estar opaco.
-    const opacidade = await page
-      .getByRole('heading', { level: 2, name: 'Contato' })
-      .evaluate((el) => {
-        let no: Element | null = el
-        let menor = 1
-        while (no) {
-          menor = Math.min(menor, Number(getComputedStyle(no).opacity))
-          no = no.parentElement
-        }
-        return menor
-      })
-    expect(opacidade).toBe(1)
+    await expect(page.locator('html')).toHaveAttribute('data-movimento', 'essencial')
+
+    // Sem o que pode causar desconforto: nenhuma seção fixada, nenhum painel grudado.
+    await expect(page.locator('.pin-spacer')).toHaveCount(0)
+    const grudados = await page
+      .locator('main *')
+      .evaluateAll((lista) => lista.filter((el) => ['sticky', 'fixed'].includes(getComputedStyle(el).position)).length)
+    expect(grudados).toBe(0)
+
+    // Depois de rolar até cada parte, todo conteúdo está visível: nada preso em opacidade 0.
+    await page.evaluate(async () => {
+      for (let y = 0; y <= document.documentElement.scrollHeight; y += window.innerHeight / 2) {
+        window.scrollTo(0, y)
+        await new Promise((r) => setTimeout(r, 120))
+      }
+    })
+    for (const titulo of ['Frentes de trabalho', 'Sala de aula interativa', 'Contato']) {
+      await expect
+        .poll(() => page.getByRole('heading', { level: 2, name: titulo }).evaluate(opacidadeEfetiva))
+        .toBe(1)
+    }
+    await expect
+      .poll(() =>
+        page.locator('main *, footer *').evaluateAll(
+          (lista) =>
+            lista.filter((el) => !el.closest('form, .animate-pulse') && Number(getComputedStyle(el).opacity) < 1).length,
+        ),
+      )
+      .toBe(0)
     await contexto.close()
   })
 })
