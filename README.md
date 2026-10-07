@@ -102,13 +102,14 @@ Pontos de atenção antes de ir para produção:
   simulados na rede (entrada, turma, sala ao vivo, "Meus dados", painel do professor). Todas
   as páginas passam por uma varredura de acessibilidade (axe, WCAG 2.1 AA).
 - **Movimento da landing:** a landing é animada com GSAP (ScrollTrigger, SplitText, ScrambleText)
-  e Lenis, em três níveis — completo, essencial e nenhum (`src/lib/nivelDeMovimento.ts`). O
-  sistema com movimento reduzido cai no essencial, não numa página parada; o controle
-  "Animações" do rodapé troca o nível e guarda a escolha. Os testes de tela rodam sem animação
-  (o jsdom não casa nenhuma consulta de mídia); `e2e/landing-movimento.spec.ts` cobre no
-  navegador os níveis e o controle, a abertura, a rolagem suave (âncoras, lista do `Select`,
-  voltar ao topo), a seção fixada, os painéis empilhados, a limpeza ao trocar de rota e a
-  ausência de rolagem horizontal de 360 a 1920 px. A varredura axe roda nos três níveis.
+  e Lenis, e anima sempre por inteiro: por decisão do dono, não reduz o movimento a pedido do
+  sistema (`prefers-reduced-motion`) e não tem controle de animações (ver "Movimento" no PRD).
+  O que muda é só por capacidade do aparelho (ponteiro fino, largura e altura da tela). Os
+  testes de tela rodam sem animação (o jsdom não casa nenhuma consulta de mídia);
+  `e2e/landing-movimento.spec.ts` cobre no navegador o movimento completo mesmo com o sistema
+  em redução, a abertura, a rolagem suave (âncoras, lista do `Select`, voltar ao topo), a seção
+  fixada, os painéis empilhados, a limpeza ao trocar de rota e a ausência de rolagem horizontal
+  de 360 a 1920 px.
 
 Na primeira vez, instale o navegador de teste: `npx playwright install chromium`.
 
