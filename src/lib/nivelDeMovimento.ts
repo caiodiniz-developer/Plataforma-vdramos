@@ -71,8 +71,8 @@ const ouvintes = new Set<() => void>()
 function atualizar() {
   const novo = resolverNivel(escolha, sistemaPedeReducao())
   if (temJanela) document.documentElement.dataset.movimento = novo
-  if (novo === nivel) return
   nivel = novo
+  // Avisa sempre: quem mostra "veio do sistema ou foi escolhido" também precisa saber.
   ouvintes.forEach((avisar) => avisar())
 }
 
@@ -109,6 +109,11 @@ function assinar(avisar: () => void) {
   return () => {
     ouvintes.delete(avisar)
   }
+}
+
+/** `true` quando a pessoa já escolheu um nível; re-renderiza quando isso muda. */
+export function useNivelFoiEscolhido(): boolean {
+  return useSyncExternalStore(assinar, nivelFoiEscolhido, () => false)
 }
 
 /** Nível de movimento vigente; o componente re-renderiza quando ele muda. */
