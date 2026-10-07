@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
+import { Abertura } from '@/componentes/landing/Abertura'
 import { Assinatura } from '@/componentes/landing/Assinatura'
 import { Cabecalho, type Ancora } from '@/componentes/landing/Cabecalho'
 import { ChamadaFinal } from '@/componentes/landing/ChamadaFinal'
 import { Contato } from '@/componentes/landing/Contato'
+import { CursorPersonalizado } from '@/componentes/landing/CursorPersonalizado'
 import { Experiencias } from '@/componentes/landing/Experiencias'
 import { FaixaDeTemas } from '@/componentes/landing/FaixaDeTemas'
 import { FrentesDeTrabalho } from '@/componentes/landing/FrentesDeTrabalho'
@@ -19,7 +21,9 @@ import { buscarLanding } from '@/dados/landing'
 import type { Assunto } from '@/dominio/contato'
 import { abasVisiveis, type TipoExperiencia } from '@/dominio/experiencia'
 import { useConsulta } from '@/hooks/useConsulta'
-import { ScrollTrigger } from '@/lib/movimento'
+import { CONSULTAS, ScrollTrigger } from '@/lib/movimento'
+import { useNivelDeMovimento } from '@/lib/nivelDeMovimento'
+import { ALTURA_DO_CABECALHO, ligarRolagemSuave, rolagemSuaveAtiva, rolarAte } from '@/lib/rolagem'
 
 function Carregando() {
   return (
@@ -63,6 +67,20 @@ function useConteudoPronto(pronto: boolean) {
 }
 
 /**
+ * Rolagem suave (Lenis) enquanto a landing está na tela: só no nível completo
+ * e com ponteiro fino. Ao sair da rota, ou se a pessoa mudar o nível, desliga.
+ */
+function useRolagemSuave() {
+  const nivel = useNivelDeMovimento()
+  useEffect(() => {
+    if (nivel !== 'completo' || !window.matchMedia(CONSULTAS.ponteiroFino).matches) return
+    const desligar = ligarRolagemSuave()
+    ScrollTrigger.refresh()
+    return desligar
+  }, [nivel])
+}
+
+/**
  * PRD F1: landing pública. Ordem: hero, faixa de temas, frentes de trabalho,
  * experiência, sala de aula interativa, galeria, chamada final, contato e
  * rodapé com a assinatura. As seções alternam Papel, Tinta e azul.
@@ -73,6 +91,7 @@ export default function Landing() {
   const [assunto, setAssunto] = useState<Assunto | undefined>()
   const pronto = Boolean(dados) && !carregando
   useConteudoPronto(pronto)
+  useRolagemSuave()
 
   const abas = dados ? abasVisiveis(dados.experiencias) : []
   const ancoras: Ancora[] = [
@@ -83,11 +102,23 @@ export default function Landing() {
     { rotulo: 'Contato', href: '#contato' },
   ]
 
-  // As âncoras Experiência e Docência levam à mesma seção, cada uma na sua aba.
   function aoNavegar(evento: React.MouseEvent<HTMLDivElement>) {
-    const link = (evento.target as HTMLElement).closest('a[href="#experiencia"]')
+    const link = (evento.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#"]')
     if (!link) return
-    setAba(link.textContent?.trim() === 'Docência' ? 'docencia' : 'profissional')
+    const ancora = link.getAttribute('href') ?? ''
+    // As âncoras Experiência e Docência levam à mesma seção, cada uma na sua aba.
+    if (ancora === '#experiencia') setAba(link.textContent?.trim() === 'Docência' ? 'docencia' : 'profissional')
+
+    // Com a rolagem suave ligada, a âncora passa por ela (o salto nativo brigaria
+    // com a suavização); o endereço é atualizado do mesmo jeito.
+    const alvo = document.getElementById(ancora.slice(1))
+    if (!alvo || !rolagemSuaveAtiva() || evento.defaultPrevented) return
+    evento.preventDefault()
+    window.history.pushState(null, '', ancora)
+    rolarAte(alvo, -ALTURA_DO_CABECALHO)
+    // O foco acompanha, como na âncora nativa, sem rolar de novo.
+    if (!alvo.hasAttribute('tabindex')) alvo.setAttribute('tabindex', '-1')
+    alvo.focus({ preventScroll: true })
   }
 
   const proximo = numerador()
@@ -100,6 +131,8 @@ export default function Landing() {
       >
         Pular para o conteúdo
       </a>
+      <Abertura />
+      <CursorPersonalizado />
       <ProgressoDeLeitura />
       <Cabecalho ancoras={ancoras} />
       <main id="conteudo">
@@ -113,11 +146,11 @@ export default function Landing() {
           <>
             <Hero perfil={dados.perfil} />
             <FaixaDeTemas />
-            <Secao id="frentes" numero={proximo()} titulo="Frentes de trabalho" colado>
+            <Secao id="frentes" numero={proximo()} titulo="Frentes de trabalho" sangrado>
               <FrentesDeTrabalho aoEscolher={setAssunto} />
             </Secao>
             {abas.length > 0 && (
-              <Secao id="experiencia" numero={proximo()} titulo="Experiência" className="border-t-2" colado>
+              <Secao id="experiencia" numero={proximo()} titulo="Experiência">
                 <Experiencias experiencias={dados.experiencias} aba={aba} aoTrocarAba={setAba} />
               </Secao>
             )}
