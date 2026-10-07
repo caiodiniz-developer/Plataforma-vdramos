@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CabecalhoDeSecao } from '@/componentes/Secao'
 import { ReguaDoEncontro } from '@/componentes/turma/ReguaDoEncontro'
-import { gsap, useMovimento } from '@/lib/movimento'
+import { magnetizar } from '@/lib/interacoes'
+import { deBloco, deMascara, deRegua, embaralhar, gsap, RECORTE_ABERTO, SplitText, useMovimento } from '@/lib/movimento'
 import { BLOCOS_DEMO, momentoDaAula } from './aulaDemo'
 
 /**
@@ -49,6 +50,35 @@ const RECURSOS: { icone: LucideIcon; titulo: string; texto: string; entrada: num
   },
 ]
 
+/** Passos de uma aula, na ordem em que acontecem (PRD, seção 6 — "Aula ao vivo"). */
+const PASSOS: { titulo: string; texto: string; cor: string }[] = [
+  {
+    titulo: 'Calendário',
+    texto: 'Você vê os encontros da turma e a régua de cada aula, com o horário de cada bloco.',
+    cor: 'bg-papel',
+  },
+  {
+    titulo: 'Aula ao vivo',
+    texto: 'Quando o professor abre a sessão, a sala ao vivo fica disponível para a turma.',
+    cor: 'bg-primary',
+  },
+  {
+    titulo: 'Perguntas',
+    texto: 'Você pergunta para a turma ou só para o professor e vota nas perguntas da turma.',
+    cor: 'bg-violet',
+  },
+  {
+    titulo: 'Quiz',
+    texto: 'Ao fim de um bloco, você responde dentro do tempo e o resultado é projetado.',
+    cor: 'bg-orange',
+  },
+  {
+    titulo: 'Materiais',
+    texto: 'Planilhas, slides e links ficam organizados por encontro.',
+    cor: 'bg-green',
+  },
+]
+
 const RESULTADO_DEMO = [
   { opcao: '$', percentual: 72, correta: true },
   { opcao: '#', percentual: 18, correta: false },
@@ -75,7 +105,7 @@ function PreviaDaSala() {
       data-previa
       role="group"
       aria-label="Prévia ilustrativa da sala de aula"
-      className="flex flex-col gap-4 bg-background p-5 text-foreground md:p-7"
+      className="flex flex-col gap-5 bg-background p-5 text-foreground md:p-8"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -88,7 +118,7 @@ function PreviaDaSala() {
         </Badge>
       </div>
 
-      <div aria-hidden="true" className="flex items-end justify-between gap-4 border-y-2 py-3">
+      <div aria-hidden="true" className="flex items-end justify-between gap-4 border-y-2 py-4">
         <span data-relogio className="font-mono text-[clamp(44px,5vw,76px)] leading-none font-bold tabular-nums">
           {FIM.hora}
         </span>
@@ -108,9 +138,9 @@ function PreviaDaSala() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-4">
-          <div data-cartao="pergunta" className="flex gap-3 border-2 p-3">
+      <div className="grid gap-5 md:grid-cols-2">
+        <div className="flex flex-col gap-5">
+          <div data-cartao="pergunta" className="flex gap-3 border-2 p-4">
             <div className="flex-1">
               <p className="eyebrow text-muted-foreground">Anônimo</p>
               <p className="text-[14px]">Quando usar referência absoluta em vez de relativa?</p>
@@ -121,7 +151,7 @@ function PreviaDaSala() {
             </span>
           </div>
 
-          <div data-cartao="materiais" className="flex flex-col gap-2 border-2 p-3">
+          <div data-cartao="materiais" className="flex flex-col gap-2 border-2 p-4">
             <p className="eyebrow text-muted-foreground">Materiais do encontro</p>
             <ul className="flex flex-col gap-1.5">
               {MATERIAIS_DEMO.map((material) => (
@@ -134,7 +164,7 @@ function PreviaDaSala() {
           </div>
         </div>
 
-        <div data-cartao="quiz" className="flex flex-col gap-2 border-2 p-3">
+        <div data-cartao="quiz" className="flex flex-col gap-2 border-2 p-4">
           <p className="eyebrow text-muted-foreground">Quiz · resultado da turma</p>
           <p className="text-[14px] font-bold">Qual símbolo fixa uma referência?</p>
           <ul className="flex flex-col gap-2">
@@ -160,20 +190,48 @@ function PreviaDaSala() {
   )
 }
 
+/** "Como é uma aula": os cinco passos, do calendário aos materiais. */
+function PassosDaAula() {
+  return (
+    <div data-passos className="conteiner-landing pt-(--espaco-bloco) pb-(--espaco-secao)">
+      <div className="flex items-center gap-4">
+        <h3 className="shrink-0 text-[clamp(26px,3vw,44px)] leading-none">Como é uma aula</h3>
+        <span aria-hidden="true" data-regua-passos className="h-0.5 flex-1 origin-left bg-current" />
+      </div>
+      <ol className="mt-(--espaco-item) grid gap-x-8 gap-y-(--espaco-item) sm:grid-cols-2 lg:grid-cols-5">
+        {PASSOS.map((passo, i) => (
+          <li key={passo.titulo} data-passo className="flex flex-col gap-4">
+            <span aria-hidden="true" data-barra-passo className={`block h-2 origin-left ${passo.cor}`} />
+            <span aria-hidden="true" data-embaralha className="font-mono text-sm text-neutro">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h4 className="font-mono text-2xl leading-tight font-bold">{passo.titulo}</h4>
+            <p className="text-[15px] leading-[1.6] text-neutro">{passo.texto}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 /**
  * Seção em Tinta que apresenta a sala de aula interativa e leva à área do aluno.
  *
- * Movimento: a rolagem faz a aula passar. No desktop, em telas altas, a seção
- * fica fixa enquanto a régua do encontro se preenche bloco a bloco, o relógio
- * anda de 18:45 a 22:45 e a pergunta, o quiz e os materiais entram no momento
- * em que cada recurso é usado. Em telas menores, a mesma sequência toca uma
- * vez quando a prévia entra na tela, sem fixar nada.
+ * Movimento — a aula passa na prévia:
+ *  - completo, em telas largas e altas: a seção fica fixa e a rolagem conduz a
+ *    aula. A régua do encontro se preenche bloco a bloco, o relógio anda de
+ *    18:45 a 22:45 e a pergunta, o quiz e os materiais entram no momento em
+ *    que cada recurso é usado. Rolar para cima retrocede.
+ *  - essencial (e telas menores): nada é fixado. A mesma sequência toca
+ *    sozinha, uma vez, quando a prévia entra na tela.
+ * A seção entra por recorte preso à rolagem (só no completo) e os passos de
+ * "Como é uma aula" aparecem um a um.
  */
 export function SalaInterativa({ numero }: { numero?: string }) {
   const raiz = useRef<HTMLElement>(null)
 
-  useMovimento(raiz, ({ completo, desktop, alto }, q) => {
-    const fixa = completo && desktop && alto
+  useMovimento(raiz, (c, q) => {
+    const fixa = c.completo && c.desktop && c.alto
     const [relogio] = q('[data-relogio]')
     const [agora] = q('[data-agora]')
     const [votos] = q('[data-votos]')
@@ -182,6 +240,19 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     // A linha do tempo tem 10 unidades: com scrub, é a distância de rolagem
     // que conta; sem scrub, `timeScale` acerta a duração real.
     const DURACAO = 10
+
+    if (c.completo) {
+      // Troca Papel → Tinta por recorte, presa à rolagem.
+      gsap.fromTo(
+        raiz.current,
+        { clipPath: 'inset(0% 6% 0% 6%)' },
+        {
+          clipPath: RECORTE_ABERTO,
+          ease: 'none',
+          scrollTrigger: { trigger: raiz.current, start: 'top bottom', end: 'top 25%', scrub: true },
+        },
+      )
+    }
 
     const mostrar = (progresso: number) => {
       const momento = momentoDaAula(BLOCOS_DEMO, progresso)
@@ -195,7 +266,15 @@ export function SalaInterativa({ numero }: { numero?: string }) {
       // O tempo aqui é de quem rola: nenhuma curva temporal.
       defaults: { ease: 'none' },
       scrollTrigger: fixa
-        ? { trigger: q('[data-palco]'), start: 'top top', end: '+=220%', pin: true, scrub: 0.6, anticipatePin: 1 }
+        ? {
+            trigger: q('[data-palco]'),
+            start: 'top top',
+            end: '+=220%',
+            pin: true,
+            // Com a rolagem suave ligada (ponteiro fino), o scrub fica colado: suavizar duas vezes atrasa.
+            scrub: c.ponteiroFino ? true : 0.5,
+            anticipatePin: 1,
+          }
         : { trigger: q('[data-previa]'), start: 'top 70%', once: true },
     })
 
@@ -215,8 +294,8 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     })
 
     const entrada = (recurso: number) => RECURSOS[recurso].entrada * DURACAO
-    const fechado = { clipPath: 'inset(0% 0% 100% 0%)', y: 20 }
-    const aberto = { clipPath: 'inset(0% 0% 0% 0%)', y: 0, duration: 0.9 }
+    const fechado = { clipPath: 'inset(0% 0% 100% 0%)', y: c.completo ? 20 : 8 }
+    const aberto = { clipPath: RECORTE_ABERTO, y: 0, duration: 0.9 }
     linha
       .fromTo(q('[data-cartao="pergunta"]'), fechado, aberto, entrada(1))
       .to(
@@ -228,23 +307,41 @@ export function SalaInterativa({ numero }: { numero?: string }) {
       .fromTo(q('[data-barra]'), { scaleX: 0 }, { scaleX: 1, duration: 1.2, stagger: 0.2 }, entrada(2) + 0.5)
       .fromTo(q('[data-cartao="materiais"]'), fechado, aberto, entrada(3))
 
-    if (!fixa) linha.timeScale(DURACAO / 3.5)
+    if (!fixa) linha.timeScale(DURACAO / (c.completo ? 3.5 : 3))
     mostrar(0)
     votos.textContent = '+0'
 
+    // "Como é uma aula": título, régua e os passos, um a um.
+    const titulo = SplitText.create(q('[data-passos] h3'), { type: 'words', mask: 'words' })
+    gsap
+      .timeline({ scrollTrigger: { trigger: q('[data-passos]'), start: 'top 80%', once: true } })
+      .from(titulo.words, { ...deMascara(c), stagger: 0.06 }, 0)
+      .from(q('[data-regua-passos]'), deRegua(c), 0.1)
+    q('[data-passo]').forEach((passo, i) => {
+      const dentro = (seletor: string) => Array.from(passo.querySelectorAll<HTMLElement>(seletor))
+      const entradaDoPasso = gsap
+        .timeline({ scrollTrigger: { trigger: passo, start: 'top 88%', once: true }, delay: c.desktop ? i * 0.1 : 0 })
+        .from(dentro('[data-barra-passo]'), { scaleX: 0, duration: c.completo ? 0.9 : 0.6, ease: 'circ.out' }, 0)
+        .from(dentro('h4, p'), { ...deBloco(c, 24), stagger: 0.08 }, 0.15)
+      dentro('[data-embaralha]').forEach((alvo) => entradaDoPasso.add(embaralhar(alvo, c), 0.1))
+    })
+
+    const desligarMagnetismo = c.completo && c.ponteiroFino ? magnetizar(q('[data-magnetico]')) : undefined
+
     // O GSAP desfaz estilos, mas não textos: devolve o estado final escrito.
     return () => {
+      desligarMagnetismo?.()
       mostrar(1)
       votos.textContent = `+${VOTOS_DEMO}`
     }
   })
 
   return (
-    <section ref={raiz} id="sala-de-aula" className="overflow-x-clip bg-secondary text-secondary-foreground">
-      <div data-palco className="flex flex-col justify-center py-20 lg:min-h-svh lg:pt-24 lg:pb-10">
-        <div className="conteiner-landing grid items-center gap-12 lg:grid-cols-12 lg:gap-10 xl:gap-16">
-          <div className="flex flex-col gap-7 lg:col-span-5">
-            <CabecalhoDeSecao numero={numero} titulo="Sala de aula interativa" tamanho="medio" />
+    <section ref={raiz} id="sala-de-aula" className="bg-secondary text-secondary-foreground">
+      <div data-palco className="flex flex-col justify-center py-(--espaco-secao) lg:min-h-svh lg:pt-24 lg:pb-8">
+        <div className="conteiner-landing grid items-center gap-(--espaco-bloco) lg:grid-cols-12 lg:gap-x-6">
+          <div className="flex flex-col gap-6 lg:col-span-5">
+            <CabecalhoDeSecao numero={numero} titulo="Sala de aula interativa" tamanho="medio" className="gap-5!" />
             <p className="max-w-[46ch] text-lg">
               Os cursos têm uma sala de aula própria. Você acompanha o calendário, acessa os materiais e participa da
               aula pelo celular ou pelo computador.
@@ -261,15 +358,18 @@ export function SalaInterativa({ numero }: { numero?: string }) {
                 </li>
               ))}
             </ul>
-            <Button asChild className="self-start hover:border-papel hover:bg-papel hover:text-tinta">
-              <Link to="/aluno/entrar">Entrar na área do aluno</Link>
-            </Button>
+            <span className="inline-flex self-start">
+              <Button asChild data-magnetico className="varredura [--varre:var(--papel)] hover:border-papel hover:bg-primary! hover:text-tinta">
+                <Link to="/aluno/entrar">Entrar na área do aluno</Link>
+              </Button>
+            </span>
           </div>
-          <div className="lg:col-span-7">
+          <div className="lg:col-span-6 lg:col-start-7">
             <PreviaDaSala />
           </div>
         </div>
       </div>
+      <PassosDaAula />
     </section>
   )
 }
