@@ -112,36 +112,17 @@ test.describe('landing', () => {
     return menor
   }
 
-  test('com as animações desligadas, o conteúdo aparece sem depender de animação', async ({ browser }) => {
-    // "Nenhum" é escolha da pessoa no controle de animações (guardada no navegador).
-    const contexto = await browser.newContext()
+  test('com movimento reduzido no sistema, a landing anima por inteiro e nada fica escondido depois de rolar', async ({
+    browser,
+  }) => {
+    // Decisão do dono: a landing não reduz o movimento a pedido do sistema, e uma
+    // escolha de nível guardada por uma versão anterior não prende ninguém.
+    const contexto = await browser.newContext({ reducedMotion: 'reduce' })
     await contexto.addInitScript(() => window.localStorage.setItem('vr:movimento', 'nenhum'))
     const page = await contexto.newPage()
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
-    await expect(page.locator('html')).toHaveAttribute('data-movimento', 'nenhum')
-    // Sem rolar: o título de uma seção lá de baixo já precisa estar opaco.
-    const opacidade = await page.getByRole('heading', { level: 2, name: 'Contato' }).evaluate(opacidadeEfetiva)
-    expect(opacidade).toBe(1)
-    await expect(page.locator('.pin-spacer')).toHaveCount(0)
-    await contexto.close()
-  })
-
-  test('com movimento reduzido no sistema, a página anima no nível essencial e nada fica escondido', async ({
-    browser,
-  }) => {
-    const contexto = await browser.newContext({ reducedMotion: 'reduce' })
-    const page = await contexto.newPage()
-    await page.goto('/')
-    await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
-    await expect(page.locator('html')).toHaveAttribute('data-movimento', 'essencial')
-
-    // Sem o que pode causar desconforto: nenhuma seção fixada, nenhum painel grudado.
-    await expect(page.locator('.pin-spacer')).toHaveCount(0)
-    const grudados = await page
-      .locator('main *')
-      .evaluateAll((lista) => lista.filter((el) => ['sticky', 'fixed'].includes(getComputedStyle(el).position)).length)
-    expect(grudados).toBe(0)
+    expect(await page.evaluate(() => window.localStorage.getItem('vr:movimento'))).toBeNull()
 
     // Depois de rolar até cada parte, todo conteúdo está visível: nada preso em opacidade 0.
     await page.evaluate(async () => {
