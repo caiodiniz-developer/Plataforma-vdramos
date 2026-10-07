@@ -59,7 +59,13 @@ export async function confirmarCodigo(acesso: IdsDeAcesso, codigo: string): Prom
     ...ids(acesso),
     codigo,
   })
-  const { error } = await supabase().auth.setSession(resposta.sessao)
-  if (error) throw new ErroDeDados('Não foi possível iniciar a sessão. Tente de novo.', 'sessao')
+  const falha = new ErroDeDados('Não foi possível iniciar a sessão. Tente de novo.', 'sessao')
+  try {
+    const { error } = await supabase().auth.setSession(resposta.sessao)
+    if (error) throw falha
+  } catch {
+    // O SDK pode lançar erro em inglês com detalhe técnico; a tela mostra só a mensagem em pt-BR.
+    throw falha
+  }
   return resposta.codigo_turma
 }
