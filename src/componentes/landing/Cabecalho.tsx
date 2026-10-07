@@ -18,11 +18,11 @@ export function Cabecalho({ ancoras }: Props) {
   return (
     <header className="sticky top-0 z-20 border-b-2 bg-background">
       <div className="conteiner-landing flex h-16 items-center justify-between gap-4">
-        <Link to="/" className="inline-flex min-h-11 items-center font-mono text-xl font-bold tracking-[-0.02em]">
+        <Link to="/" className="inline-flex min-h-11 items-center font-mono text-xl font-bold tracking-[-0.02em] whitespace-nowrap">
           Vitor Ramos
         </Link>
 
-        <nav aria-label="Seções da página" className="hidden items-center gap-8 md:flex">
+        <nav aria-label="Seções da página" className="hidden items-center gap-8 lg:flex">
           {ancoras.map((a) => {
             const atual = ativa === a.href.slice(1)
             return (
@@ -31,7 +31,7 @@ export function Cabecalho({ ancoras }: Props) {
                 href={a.href}
                 aria-current={atual ? 'true' : undefined}
                 className={cn(
-                  'eyebrow sublinhado-animado inline-flex min-h-11 items-center transition-colors hover:text-foreground',
+                  'eyebrow sublinhado-animado inline-flex min-h-11 items-center whitespace-nowrap transition-colors hover:text-foreground',
                   atual ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
@@ -46,7 +46,7 @@ export function Cabecalho({ ancoras }: Props) {
 
         <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden" aria-label="Abrir menu">
+            <Button variant="outline" size="icon" className="lg:hidden" aria-label="Abrir menu">
               <MenuIcon />
             </Button>
           </SheetTrigger>
