@@ -350,8 +350,12 @@ html.lenis.lenis-stopped {
  * fonte limpa (Inter) no texto corrido. A fonte de código do guia (Ubuntu
  * Mono) fica só nos títulos e nos destaques. A landing continua com o guia
  * original.
+ *
+ * O `body:has` leva o tema também para o que é montado fora da árvore da
+ * página (diálogos, menus, seletores e avisos), sem precisar repetir a classe.
  */
-.plataforma {
+.plataforma,
+body:has(.plataforma) {
   --background: #ffffff;
   --card: #ffffff;
   --popover: #ffffff;
@@ -365,7 +369,6 @@ html.lenis.lenis-stopped {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-weight: 400;
-  min-height: 100svh;
 }
 
 /* Destaque em fonte de código: números, IDs, datas e rótulos importantes. */

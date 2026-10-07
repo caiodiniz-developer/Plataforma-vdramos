@@ -193,7 +193,7 @@ export function LayoutAluno() {
   }
 
   return (
-    <div className="plataforma">
+    <div className="plataforma min-h-svh">
       <Carregado consulta={consulta} linhas={4}>
         {(turmas) => {
           if (turmas.length === 0) {

@@ -378,7 +378,7 @@ export default function Alunos() {
                                   <MoreHorizontalIcon />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="plataforma">
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => navegar(`/admin/alunos/${a.aluno_autorizado_id}`)}>
                                   <EyeIcon aria-hidden="true" />
                                   Ver perfil
