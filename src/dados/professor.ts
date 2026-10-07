@@ -356,6 +356,7 @@ export type AtividadeDoProfessor = {
   dificuldade: 'facil' | 'medio' | 'dificil' | null
   categoria: string | null
   conteudo_id: string | null
+  arquivo_path: string | null
   status: 'rascunho' | 'publicada' | 'encerrada'
   publicada_em: string | null
   created_at: string
@@ -381,7 +382,7 @@ export async function listarAtividades(modo: 'atividades' | 'questoes'): Promise
   const { data, error } = await supabase()
     .from('atividade')
     .select(
-      `id, turma_id, tipo, titulo, descricao, instrucoes_md, prazo_em, dificuldade, categoria, conteudo_id, status, publicada_em, created_at,
+      `id, turma_id, tipo, titulo, descricao, instrucoes_md, prazo_em, dificuldade, categoria, conteudo_id, arquivo_path, status, publicada_em, created_at,
        itens:atividade_item (ordem, enunciado, tipo_resposta, obrigatorio, explicacao,
          opcoes:atividade_opcao (ordem, texto, correta),
          respostas:atividade_resposta (inscricao_id))`,
@@ -416,6 +417,7 @@ export type DadosDaAtividade = {
   dificuldade: AtividadeDoProfessor['dificuldade']
   categoria: string
   conteudo_id: string | null
+  arquivo: File | null
   itens: ItemEditavel[]
 }
 
@@ -426,7 +428,7 @@ export type DadosDaAtividade = {
  */
 export async function salvarAtividade(dados: DadosDaAtividade, existente?: AtividadeDoProfessor): Promise<string> {
   const db = supabase()
-  const campos = {
+  const campos: Record<string, unknown> = {
     turma_id: dados.turma_id,
     tipo: dados.tipo,
     titulo: dados.titulo.trim(),
@@ -438,6 +440,7 @@ export async function salvarAtividade(dados: DadosDaAtividade, existente?: Ativi
     conteudo_id: dados.conteudo_id,
     mostrar_resultado: 'apos_responder',
   }
+  if (dados.arquivo) campos.arquivo_path = await enviarArquivo('atividades', dados.arquivo)
 
   let id = existente?.id
   if (existente) {

@@ -206,6 +206,7 @@ export type AtividadeParaAluno = {
   descricao?: string | null
   instrucoes_md?: string | null
   prazo_em?: string | null
+  arquivo_path?: string | null
   itens: ItemParaAluno[]
 }
 
