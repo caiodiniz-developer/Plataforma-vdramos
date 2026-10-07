@@ -4,8 +4,9 @@ import { LayoutAdmin } from '@/componentes/admin/LayoutAdmin'
 import { PortaoDoTermo } from '@/componentes/PortaoDoTermo'
 import { Toaster } from '@/components/ui/sonner'
 import { ProvedorDeSessao, RotaProtegida } from '@/contextos/Sessao'
-import Landing from '@/paginas/Landing'
 
+// A landing carrega à parte: o GSAP só é baixado por quem abre a página inicial.
+const Landing = lazy(() => import('@/paginas/Landing'))
 const Privacidade = lazy(() => import('@/paginas/Privacidade'))
 const Entrar = lazy(() => import('@/paginas/aluno/Entrar'))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
