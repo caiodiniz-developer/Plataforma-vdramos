@@ -66,7 +66,7 @@ export function FrentesDeTrabalho({ aoEscolher }: Props) {
       const dentro = (seletor: string) => Array.from(painel.querySelectorAll<HTMLElement>(seletor))
       const palavras = SplitText.create(dentro('h3'), { type: 'words', mask: 'words' })
       const linha = gsap
-        .timeline({ scrollTrigger: { trigger: painel, start: 'top 75%', once: true } })
+        .timeline({ scrollTrigger: { trigger: painel, start: 'top 75%' } })
         .from(dentro('[data-regua]'), deRegua(c), 0)
         .from(palavras.words, { ...deMascara(c), stagger: 0.08 }, 0.05)
         .from(dentro('[data-apoio]'), { ...deBloco(c, 28), stagger: 0.08 }, 0.25)

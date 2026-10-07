@@ -53,7 +53,7 @@ export function Contato({ perfil, assunto }: { perfil: PerfilPublico; assunto?: 
 
   useMovimento(raiz, (c, q) => {
     gsap
-      .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 85%', once: true } })
+      .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 85%' } })
       .from(q('[data-regua]'), { ...deRegua(c), stagger: 0.08 }, 0)
       .from(q('[data-apoio]'), { ...deBloco(c, 20), stagger: 0.06 }, 0)
       .fromTo(

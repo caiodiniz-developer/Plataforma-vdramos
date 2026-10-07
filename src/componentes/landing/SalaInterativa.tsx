@@ -275,7 +275,7 @@ export function SalaInterativa({ numero }: { numero?: string }) {
             scrub: c.ponteiroFino ? true : 0.5,
             anticipatePin: 1,
           }
-        : { trigger: q('[data-previa]'), start: 'top 70%', once: true },
+        : { trigger: q('[data-previa]'), start: 'top 70%' },
     })
 
     linha
@@ -314,13 +314,13 @@ export function SalaInterativa({ numero }: { numero?: string }) {
     // "Como é uma aula": título, régua e os passos, um a um.
     const titulo = SplitText.create(q('[data-passos] h3'), { type: 'words', mask: 'words' })
     gsap
-      .timeline({ scrollTrigger: { trigger: q('[data-passos]'), start: 'top 80%', once: true } })
+      .timeline({ scrollTrigger: { trigger: q('[data-passos]'), start: 'top 80%' } })
       .from(titulo.words, { ...deMascara(c), stagger: 0.06 }, 0)
       .from(q('[data-regua-passos]'), deRegua(c), 0.1)
     q('[data-passo]').forEach((passo, i) => {
       const dentro = (seletor: string) => Array.from(passo.querySelectorAll<HTMLElement>(seletor))
       const entradaDoPasso = gsap
-        .timeline({ scrollTrigger: { trigger: passo, start: 'top 88%', once: true }, delay: c.desktop ? i * 0.1 : 0 })
+        .timeline({ scrollTrigger: { trigger: passo, start: 'top 88%' }, delay: c.desktop ? i * 0.1 : 0 })
         .from(dentro('[data-barra-passo]'), { scaleX: 0, duration: c.completo ? 0.9 : 0.6, ease: 'circ.out' }, 0)
         .from(dentro('h4, p'), { ...deBloco(c, 24), stagger: 0.08 }, 0.15)
       dentro('[data-embaralha]').forEach((alvo) => entradaDoPasso.add(embaralhar(alvo, c), 0.1))

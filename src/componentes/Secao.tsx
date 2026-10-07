@@ -27,7 +27,7 @@ export function CabecalhoDeSecao({ numero, titulo, tamanho = 'grande', className
     // leitor de tela continua lendo o título inteiro.
     const palavras = SplitText.create(q('h2'), { type: 'words', mask: 'words' })
     const linha = gsap
-      .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 82%', once: true } })
+      .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 82%' } })
       .from(palavras.words, { ...deMascara(c), stagger: 0.07 })
       .from(q('[data-regua]'), deRegua(c), 0.1)
     q('[data-numero]').forEach((alvo) => linha.add(embaralhar(alvo, c), 0))

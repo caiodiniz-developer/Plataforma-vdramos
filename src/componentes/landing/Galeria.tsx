@@ -36,7 +36,7 @@ export function Galeria({ fotos }: { fotos: Foto[] }) {
     q('[data-foto]').forEach((item, i) => {
       const dentro = (seletor: string) => Array.from(item.querySelectorAll<HTMLElement>(seletor))
       const linha = gsap
-        .timeline({ scrollTrigger: { trigger: item, start: 'top 85%', once: true } })
+        .timeline({ scrollTrigger: { trigger: item, start: 'top 85%' } })
         .fromTo(
           dentro('[data-moldura]'),
           { clipPath: c.completo ? 'inset(100% 0% 0% 0%)' : 'inset(14% 0% 0% 0%)', opacity: c.completo ? 1 : 0 },

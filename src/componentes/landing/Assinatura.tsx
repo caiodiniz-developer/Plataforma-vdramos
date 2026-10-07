@@ -15,7 +15,7 @@ export function Assinatura({ nome }: { nome: string }) {
     gsap.from(letras.chars, {
       ...deMascara(c),
       stagger: 0.03,
-      scrollTrigger: { trigger: raiz.current, start: 'top 95%', once: true },
+      scrollTrigger: { trigger: raiz.current, start: 'top 95%' },
     })
   })
 

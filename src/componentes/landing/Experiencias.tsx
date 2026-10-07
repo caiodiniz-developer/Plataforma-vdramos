@@ -81,7 +81,7 @@ export function Experiencias({ experiencias, aba, aoTrocarAba }: Props) {
       q('[data-experiencia]').forEach((linha) => {
         const dentro = (seletor: string) => Array.from(linha.querySelectorAll<HTMLElement>(seletor))
         gsap
-          .timeline({ scrollTrigger: { trigger: linha, start: 'top 88%', once: true } })
+          .timeline({ scrollTrigger: { trigger: linha, start: 'top 88%' } })
           .from(dentro('[data-regua]'), deRegua(c), 0)
           .from(dentro('[data-conteudo]'), deBloco(c, 32), 0.1)
       })

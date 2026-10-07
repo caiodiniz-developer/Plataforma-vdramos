@@ -34,7 +34,7 @@ export function ChamadaFinal() {
 
     const palavras = SplitText.create(q('h2'), { type: 'words', mask: 'words' })
     gsap
-      .timeline({ scrollTrigger: { trigger: q('h2'), start: 'top 80%', once: true } })
+      .timeline({ scrollTrigger: { trigger: q('h2'), start: 'top 80%' } })
       .from(q('[data-regua]'), deRegua(c), 0)
       .from(palavras.words, { ...deMascara(c), stagger: c.completo ? 0.06 : 0.04 }, 0)
       .from(q('[data-apoio]'), { ...deBloco(c, 28), stagger: 0.08 }, c.completo ? 0.5 : 0.25)

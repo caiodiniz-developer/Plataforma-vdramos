@@ -53,6 +53,11 @@ export type Seletor = (seletor: string) => HTMLElement[]
  * O estado escondido de cada elemento é aplicado pelo próprio GSAP. Se este
  * código não rodar, nada fica invisível.
  *
+ * Entradas que tocam uma vez usam o padrão do ScrollTrigger (toca ao entrar e
+ * não volta), nunca `once: true`. Com `once`, o gatilho se mata ao disparar; se
+ * isso acontece dentro de uma remedição — a pessoa volta para a landing com a
+ * página já rolada — a lista de gatilhos muda no meio do laço e o GSAP quebra.
+ *
  * Regra da casa: esconder com `opacity`, `transform` ou `clip-path`, nunca com
  * `visibility` (`autoAlpha`). Texto com `visibility: hidden` sai da árvore de
  * acessibilidade: um link abaixo da dobra perderia o nome até a pessoa rolar.
