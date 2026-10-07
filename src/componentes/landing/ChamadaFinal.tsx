@@ -30,7 +30,7 @@ export function ChamadaFinal() {
       .timeline({ scrollTrigger: { trigger: q('h2'), start: 'top 80%', once: true } })
       .from(q('[data-regua]'), { scaleX: 0, duration: 1.2, ease: 'circ.out' }, 0)
       .from(palavras.words, { yPercent: 110, duration: 1.1, ease: 'expo.out', stagger: 0.06 }, 0)
-      .from(q('[data-apoio]'), { y: 28, autoAlpha: 0, duration: 0.8, ease: 'power2.out', stagger: 0.08 }, 0.5)
+      .from(q('[data-apoio]'), { y: 28, opacity: 0, duration: 0.8, ease: 'power2.out', stagger: 0.08 }, 0.5)
   })
 
   return (

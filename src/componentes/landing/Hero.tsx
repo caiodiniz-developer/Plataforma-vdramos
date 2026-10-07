@@ -41,11 +41,11 @@ export function Hero({ perfil }: Props) {
     gsap
       .timeline({ defaults: { ease: 'expo.out' } })
       .from(q('[data-regua]'), { scaleX: 0, duration: 1.2, ease: 'circ.out' }, 0)
-      .from(q('[data-topo]'), { y: 16, autoAlpha: 0, duration: 0.8, stagger: 0.08 }, 0.05)
+      .from(q('[data-topo]'), { y: 16, opacity: 0, duration: 0.8, stagger: 0.08 }, 0.05)
       .from(nome.chars, { yPercent: 110, duration: 1.2, stagger: 0.035 }, 0.1)
       .from(q('[data-cor]'), { scaleX: 0, duration: 0.9, ease: 'circ.out', stagger: 0.09 }, 0.55)
       .from(q('[data-bio]'), { clipPath: 'inset(0% 0% 100% 0%)', y: 28, duration: 1.1 }, 0.7)
-      .from(q('[data-entra]'), { y: 24, autoAlpha: 0, duration: 0.8, stagger: 0.06 }, 0.85)
+      .from(q('[data-entra]'), { y: 24, opacity: 0, duration: 0.8, stagger: 0.06 }, 0.85)
       .fromTo(
         q('[data-moldura]'),
         { clipPath: 'inset(100% 0% 0% 0%)' },

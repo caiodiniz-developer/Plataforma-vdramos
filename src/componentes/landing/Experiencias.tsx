@@ -84,7 +84,7 @@ export function Experiencias({ experiencias, aba, aoTrocarAba }: Props) {
         gsap
           .timeline({ scrollTrigger: { trigger: linha, start: 'top 88%', once: true } })
           .from(dentro('[data-regua]'), { scaleX: 0, duration: 1.1, ease: 'circ.out' }, 0)
-          .from(dentro('[data-conteudo]'), { y: 32, autoAlpha: 0, duration: 0.9, ease: 'power2.out' }, 0.1)
+          .from(dentro('[data-conteudo]'), { y: 32, opacity: 0, duration: 0.9, ease: 'power2.out' }, 0.1)
       })
       // A altura da seção muda com a aba: quem vem depois precisa se remedir.
       if (abaMontada.current !== ativa) ScrollTrigger.refresh()

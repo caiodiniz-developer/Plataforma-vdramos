@@ -32,6 +32,10 @@ export type Seletor = (seletor: string) => HTMLElement[]
  *
  * O estado escondido de cada elemento é aplicado pelo próprio GSAP. Se este
  * código não rodar, nada fica invisível.
+ *
+ * Regra da casa: esconder com `opacity`, `transform` ou `clip-path`, nunca com
+ * `visibility` (`autoAlpha`). Texto com `visibility: hidden` sai da árvore de
+ * acessibilidade: um link abaixo da dobra perderia o nome até a pessoa rolar.
  */
 export function useMovimento(
   escopo: RefObject<HTMLElement | null>,

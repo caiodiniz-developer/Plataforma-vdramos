@@ -42,7 +42,7 @@ export function Galeria({ fotos }: { fotos: Foto[] }) {
         )
         .from(dentro('[data-imagem]'), { scale: 1.3, duration: 1.6, ease: 'power2.out' }, 0)
         .from(dentro('[data-regua]'), { scaleX: 0, duration: 1.1, ease: 'circ.out' }, 0.5)
-        .from(dentro('figcaption'), { y: 16, autoAlpha: 0, duration: 0.7, ease: 'power2.out' }, 0.6)
+        .from(dentro('figcaption'), { y: 16, opacity: 0, duration: 0.7, ease: 'power2.out' }, 0.6)
 
       const deslocamento = PARALLAX[i % PARALLAX.length]
       if (desktop && deslocamento !== 0) {

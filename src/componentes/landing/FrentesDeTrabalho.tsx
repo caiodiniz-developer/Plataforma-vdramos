@@ -65,7 +65,7 @@ export function FrentesDeTrabalho({ aoEscolher }: Props) {
         .timeline({ scrollTrigger: { trigger: linha, start: 'top 85%', once: true } })
         .from(dentro('[data-regua]'), { scaleX: 0, duration: 1.2, ease: 'circ.out' }, 0)
         .from(dentro('[data-titulo]'), { yPercent: 105, duration: 1.1, ease: 'expo.out' }, 0.05)
-        .from(dentro('[data-apoio]'), { y: 24, autoAlpha: 0, duration: 0.8, ease: 'power2.out', stagger: 0.07 }, 0.2)
+        .from(dentro('[data-apoio]'), { y: 24, opacity: 0, duration: 0.8, ease: 'power2.out', stagger: 0.07 }, 0.2)
     })
   })
 
