@@ -112,7 +112,11 @@ export async function simularSupabase(page: Page, respostas: Respostas, usuario?
   let atual = usuario
 
   if (usuario) {
+    // Instala a sessão uma vez por aba: se o app fizer logout, ela não volta
+    // sozinha na navegação seguinte.
     await page.addInitScript((sessao) => {
+      if (window.sessionStorage.getItem('sessao-de-teste-instalada')) return
+      window.sessionStorage.setItem('sessao-de-teste-instalada', '1')
       window.localStorage.setItem('sb-localhost-auth-token', JSON.stringify(sessao))
     }, sessaoDe(usuario))
   }
