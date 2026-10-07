@@ -141,12 +141,12 @@ export function Hero({ perfil }: Props) {
       </div>
 
       <div className="conteiner-landing relative flex flex-col pt-8 pb-(--espaco-bloco) md:pt-10 lg:min-h-[calc(100svh-4rem)]">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           <p data-topo className="eyebrow shrink-0 text-muted-foreground">
             {perfil.titulo}
             {perfil.cidade && <span> · {perfil.cidade}</span>}
           </p>
-          <span aria-hidden="true" data-regua className="h-0.5 flex-1 origin-left bg-foreground" />
+          <span aria-hidden="true" data-regua className="h-0.5 min-w-10 flex-1 origin-left bg-foreground" />
           {ofereceCompleto && (
             <button
               type="button"
