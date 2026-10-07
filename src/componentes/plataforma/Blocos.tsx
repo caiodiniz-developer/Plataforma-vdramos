@@ -99,7 +99,7 @@ export function Busca({
   className?: string
 }) {
   return (
-    <div className={cn('relative w-full sm:max-w-[320px]', className)}>
+    <div className={cn('relative w-full sm:w-[280px]', className)}>
       <SearchIcon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="search"
