@@ -112,8 +112,10 @@ export async function exportarMeusDados(): Promise<Record<string, unknown>> {
   }
 }
 
-/** PRD F8: apaga perfil (cascata) e a conta no Auth pela Edge Function. */
+/**
+ * PRD F8: apaga perfil (cascata) e a conta no Auth pela Edge Function.
+ * Quem chama encerra a sessão local depois de sair da tela protegida.
+ */
 export async function excluirConta(): Promise<void> {
   await chamarFuncao('excluir-conta', {})
-  await supabase().auth.signOut()
 }
