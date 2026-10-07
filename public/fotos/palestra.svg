@@ -25,6 +25,4 @@
     <circle cx="160" cy="850" r="44"/><circle cx="300" cy="860" r="44"/><circle cx="440" cy="848" r="44"/><circle cx="580" cy="862" r="44"/>
     <circle cx="720" cy="850" r="44"/><circle cx="860" cy="860" r="44"/><circle cx="1000" cy="848" r="44"/>
   </g>
-  <rect x="30" y="30" width="250" height="48" fill="#f4f2ee"/>
-  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#181a1e">FOTO DE EXEMPLO</text>
 </svg>

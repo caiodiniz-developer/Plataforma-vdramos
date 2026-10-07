@@ -20,6 +20,4 @@
   <circle cx="800" cy="640" r="60" fill="#5a5a56"/>
   <path d="M690 900c0-130 50-200 110-200s110 70 110 200z" fill="#5a5a56"/>
   <path d="M500 760L640 700" stroke="#2f6fed" stroke-width="14" stroke-linecap="square"/>
-  <rect x="30" y="30" width="250" height="48" fill="#181a1e"/>
-  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#f4f2ee">FOTO DE EXEMPLO</text>
 </svg>

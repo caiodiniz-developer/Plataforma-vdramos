@@ -31,6 +31,4 @@
     <rect x="830" y="640" width="210" height="40" fill="#1f9d55"/>
     <rect x="830" y="720" width="90" height="40" fill="#c9c9c4"/>
   </g>
-  <rect x="30" y="30" width="250" height="48" fill="#f4f2ee"/>
-  <text x="48" y="62" font-family="Ubuntu, sans-serif" font-weight="700" font-size="19" letter-spacing="3" fill="#181a1e">FOTO DE EXEMPLO</text>
 </svg>
