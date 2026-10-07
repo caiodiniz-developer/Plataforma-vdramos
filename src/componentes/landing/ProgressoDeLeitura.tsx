@@ -1,6 +1,7 @@
 import { ArrowUpIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { rolarAte } from '@/lib/rolagem'
 
 /** A partir de quanto da página rolada o botão de voltar ao topo aparece. */
 const LIMIAR_DO_BOTAO = 0.15
@@ -46,7 +47,7 @@ export function ProgressoDeLeitura() {
         size="icon"
         variant="secondary"
         aria-label="Voltar ao topo"
-        onClick={() => window.scrollTo({ top: 0 })}
+        onClick={() => rolarAte(0)}
         className={`fixed right-4 bottom-4 z-30 border-papel transition-[opacity,transform] duration-300 md:right-8 md:bottom-8 ${
           botaoVisivel ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
         }`}

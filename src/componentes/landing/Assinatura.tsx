@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties } from 'react'
-import { gsap, SplitText, useMovimento } from '@/lib/movimento'
+import { deMascara, gsap, SplitText, useMovimento } from '@/lib/movimento'
 
 /**
  * Assinatura que fecha a landing: o nome em escala de página, dentro do
@@ -10,12 +10,10 @@ import { gsap, SplitText, useMovimento } from '@/lib/movimento'
 export function Assinatura({ nome }: { nome: string }) {
   const raiz = useRef<HTMLParagraphElement>(null)
 
-  useMovimento(raiz, () => {
+  useMovimento(raiz, (c) => {
     const letras = SplitText.create(raiz.current, { type: 'chars', mask: 'chars', aria: 'none' })
     gsap.from(letras.chars, {
-      yPercent: 110,
-      duration: 1.1,
-      ease: 'expo.out',
+      ...deMascara(c),
       stagger: 0.03,
       scrollTrigger: { trigger: raiz.current, start: 'top 95%', once: true },
     })

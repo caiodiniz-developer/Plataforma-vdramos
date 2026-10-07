@@ -39,7 +39,7 @@ export function Cabecalho({ ancoras }: Props) {
               </a>
             )
           })}
-          <Button asChild size="sm" variant="secondary">
+          <Button asChild size="sm" variant="secondary" className="varredura [--varre:var(--principal)] hover:bg-secondary!">
             <Link to="/aluno/entrar">Área do aluno</Link>
           </Button>
         </nav>
