@@ -12,7 +12,8 @@
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "usuarios:exemplo": "node --env-file=.env scripts/usuarios-exemplo.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verificar:backend": "node --env-file=.env scripts/verificar-backend.mjs"
   },
   "dependencies": {
     "@fontsource/ubuntu": "^5.3.0",
