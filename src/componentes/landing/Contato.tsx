@@ -1,17 +1,16 @@
-import { LinkIcon, MailIcon, PhoneIcon, type LucideIcon } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Revelar } from '@/componentes/Revelar'
+import { ArrowUpRightIcon } from 'lucide-react'
+import { useRef } from 'react'
 import type { PerfilPublico } from '@/dados/landing'
 import type { Assunto } from '@/dominio/contato'
+import { gsap, RECORTE_ABERTO, useMovimento } from '@/lib/movimento'
 import { FormularioDeContato } from './FormularioDeContato'
 
-type Canal = { icone: LucideIcon; rotulo: string; valor: string; href: string; externo: boolean }
+type Canal = { rotulo: string; valor: string; href: string; externo: boolean }
 
 function canaisDoPerfil(perfil: PerfilPublico): Canal[] {
   const canais: Canal[] = []
   if (perfil.email_contato) {
     canais.push({
-      icone: MailIcon,
       rotulo: 'E-mail',
       valor: perfil.email_contato,
       href: `mailto:${perfil.email_contato}`,
@@ -20,7 +19,6 @@ function canaisDoPerfil(perfil: PerfilPublico): Canal[] {
   }
   if (perfil.linkedin_url) {
     canais.push({
-      icone: LinkIcon,
       rotulo: 'LinkedIn',
       valor: perfil.linkedin_url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''),
       href: perfil.linkedin_url,
@@ -29,7 +27,6 @@ function canaisDoPerfil(perfil: PerfilPublico): Canal[] {
   }
   if (perfil.telefone) {
     canais.push({
-      icone: PhoneIcon,
       rotulo: 'Telefone',
       valor: perfil.telefone,
       href: `tel:${perfil.telefone.replace(/[^\d+]/g, '')}`,
@@ -37,46 +34,73 @@ function canaisDoPerfil(perfil: PerfilPublico): Canal[] {
     })
   }
   for (const link of perfil.outros_links) {
-    canais.push({ icone: LinkIcon, rotulo: link.rotulo, valor: link.url.replace(/^https?:\/\//, ''), href: link.url, externo: true })
+    canais.push({ rotulo: link.rotulo, valor: link.url.replace(/^https?:\/\//, ''), href: link.url, externo: true })
   }
   return canais
 }
 
-/** Contato: cartões de canal e formulário (PRD, seção 5 — Landing). */
+/**
+ * Contato: texto de orientação e canais à esquerda, formulário à direita
+ * (PRD, seção 5 — Landing). Sem canais cadastrados, o formulário ocupa a
+ * largura toda ao lado do texto.
+ *
+ * Movimento: a régua de cada canal se desenha e a moldura do formulário abre
+ * por recorte quando entra na tela.
+ */
 export function Contato({ perfil, assunto }: { perfil: PerfilPublico; assunto?: Assunto }) {
+  const raiz = useRef<HTMLDivElement>(null)
   const canais = canaisDoPerfil(perfil)
 
+  useMovimento(raiz, (_condicoes, q) => {
+    gsap
+      .timeline({ scrollTrigger: { trigger: raiz.current, start: 'top 85%', once: true } })
+      .from(q('[data-regua]'), { scaleX: 0, duration: 1, ease: 'circ.out', stagger: 0.08 }, 0)
+      .from(q('[data-apoio]'), { y: 20, duration: 0.7, ease: 'power2.out', stagger: 0.06 }, 0)
+      .fromTo(
+        q('[data-moldura]'),
+        { clipPath: 'inset(0% 0% 100% 0%)' },
+        // Depois de aberto, o recorte sai: o anel de foco dos campos não pode ser cortado.
+        { clipPath: RECORTE_ABERTO, duration: 0.8, ease: 'power3.out', clearProps: 'clipPath' },
+        0,
+      )
+  })
+
   return (
-    <div className="grid gap-8 md:grid-cols-[1fr_1.6fr]">
-      {canais.length > 0 && (
-        <ul className="flex flex-col gap-4">
-          {canais.map((canal) => (
-            <Revelar key={canal.href} como="li">
-              <Card>
-                <CardContent className="flex items-center gap-4">
-                  <canal.icone aria-hidden="true" className="size-5 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="eyebrow text-muted-foreground">{canal.rotulo}</p>
-                    <a
-                      href={canal.href}
-                      className="block truncate font-bold underline"
-                      {...(canal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                    >
-                      {canal.valor}
-                    </a>
-                  </div>
-                </CardContent>
-              </Card>
-            </Revelar>
-          ))}
-        </ul>
-      )}
-      <Card className={canais.length === 0 ? 'md:col-span-2' : undefined}>
-        <CardContent>
-          {/* A chave remonta o formulário quando uma frente de trabalho escolhe o assunto. */}
-          <FormularioDeContato key={assunto ?? ''} assuntoInicial={assunto} />
-        </CardContent>
-      </Card>
+    <div ref={raiz} className="grid gap-12 lg:grid-cols-12 lg:gap-10">
+      <div className="flex flex-col gap-10 lg:col-span-5">
+        <p data-apoio className="max-w-[24ch] text-2xl leading-[1.3] md:text-[32px]">
+          Conte o que você precisa. A resposta chega no e-mail que você informar.
+        </p>
+        {canais.length > 0 && (
+          <ul>
+            {canais.map((canal) => (
+              <li key={canal.href}>
+                <span aria-hidden="true" data-regua className="block h-0.5 origin-left bg-foreground" />
+                <div data-apoio className="flex flex-col gap-1 py-4">
+                  <p className="eyebrow text-muted-foreground">{canal.rotulo}</p>
+                  <a
+                    href={canal.href}
+                    className="group flex min-h-11 items-center justify-between gap-4 font-mono text-xl font-bold md:text-2xl"
+                    {...(canal.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  >
+                    <span className="min-w-0 truncate underline decoration-2 underline-offset-4">{canal.valor}</span>
+                    {canal.externo && <span className="sr-only">(abre em nova aba)</span>}
+                    <ArrowUpRightIcon
+                      aria-hidden="true"
+                      className="size-6 shrink-0 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1"
+                    />
+                  </a>
+                </div>
+              </li>
+            ))}
+            <li aria-hidden="true" className="h-0.5 bg-foreground" />
+          </ul>
+        )}
+      </div>
+      <div data-moldura className="border-2 bg-card p-5 md:p-10 lg:col-span-7">
+        {/* A chave remonta o formulário quando uma frente de trabalho escolhe o assunto. */}
+        <FormularioDeContato key={assunto ?? ''} assuntoInicial={assunto} />
+      </div>
     </div>
   )
 }
