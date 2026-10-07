@@ -49,7 +49,7 @@ export function CursorPersonalizado() {
       if (novo === rotulo) return
       rotulo = novo
       if (novo) texto.textContent = novo
-      gsap.to(etiqueta, { scale: novo ? 1 : 0, duration: novo ? 0.35 : 0.2, ease: novo ? 'back.out(1.6)' : 'power2.in', overwrite: true })
+      gsap.to(etiqueta, { scale: novo ? 1 : 0, duration: novo ? 0.35 : 0.2, ease: novo ? 'back.out(1.6)' : 'power2.in', overwrite: 'auto' })
       gsap.to(ponto, { scale: novo ? 0.4 : 1, duration: 0.25, overwrite: 'auto' })
     }
     const aoSairDaJanela = () => {
