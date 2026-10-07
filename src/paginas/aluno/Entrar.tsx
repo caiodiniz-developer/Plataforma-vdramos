@@ -1,67 +1,132 @@
-import { Loader2Icon, TriangleAlertIcon } from 'lucide-react'
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { EyeIcon, EyeOffIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react'
+import { useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSessao } from '@/contextos/Sessao'
-import { cadastrar, confirmarCodigo, verificarIds, type IdsDeAcesso } from '@/dados/acesso'
-import { emailValido } from '@/dominio/email'
-
-type Etapa = 'ids' | 'cadastro' | 'codigo'
-
-const ESPERA_REENVIO_S = 60
+import { cadastrar, entrar } from '@/dados/acesso'
+import { SENHA_MINIMA, validarCadastro, type CadastroDeAluno, type ErrosDeCadastro } from '@/dominio/senha'
 
 function Enviar({ ocupado, children }: { ocupado: boolean; children: string }) {
   return (
-    <Button type="submit" disabled={ocupado}>
+    <Button type="submit" disabled={ocupado} className="w-full">
       {ocupado && <Loader2Icon className="animate-spin" aria-hidden="true" />}
       {children}
     </Button>
   )
 }
 
+function Aviso({ mensagem }: { mensagem: string | null }) {
+  if (!mensagem) return null
+  return (
+    <Alert variant="destructive" className="bg-card">
+      <TriangleAlertIcon aria-hidden="true" />
+      <AlertDescription>{mensagem}</AlertDescription>
+    </Alert>
+  )
+}
+
+function ErroDoCampo({ id, mensagem }: { id: string; mensagem?: string }) {
+  if (!mensagem) return null
+  return (
+    <p id={id} className="text-[13px] font-semibold text-destructive">
+      {mensagem}
+    </p>
+  )
+}
+
+/** Campo de senha com botão de mostrar/ocultar. */
+function CampoDeSenha({
+  id,
+  rotulo,
+  valor,
+  aoMudar,
+  autoComplete,
+  erro,
+  ajuda,
+}: {
+  id: string
+  rotulo: string
+  valor: string
+  aoMudar: (valor: string) => void
+  autoComplete: string
+  erro?: string
+  ajuda?: string
+}) {
+  const [visivel, setVisivel] = useState(false)
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={id}>{rotulo}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={visivel ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          value={valor}
+          onChange={(e) => aoMudar(e.target.value)}
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={erro ? `${id}-erro` : ajuda ? `${id}-ajuda` : undefined}
+          className="pr-12"
+        />
+        <button
+          type="button"
+          onClick={() => setVisivel((v) => !v)}
+          aria-label={visivel ? `Ocultar ${rotulo.toLowerCase()}` : `Mostrar ${rotulo.toLowerCase()}`}
+          aria-pressed={visivel}
+          className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
+        >
+          {visivel ? <EyeOffIcon className="size-4" aria-hidden="true" /> : <EyeIcon className="size-4" aria-hidden="true" />}
+        </button>
+      </div>
+      {ajuda && !erro && (
+        <p id={`${id}-ajuda`} className="text-xs text-muted-foreground">
+          {ajuda}
+        </p>
+      )}
+      <ErroDoCampo id={`${id}-erro`} mensagem={erro} />
+    </div>
+  )
+}
+
+const CADASTRO_VAZIO: CadastroDeAluno = {
+  nome: '',
+  matricula: '',
+  codigoTurma: '',
+  senha: '',
+  confirmacao: '',
+  aceiteTermo: false,
+}
+
 /**
- * PRD F3 e F4: entrada do aluno em até três etapas — IDs, cadastro (só no
- * primeiro acesso) e código de 6 dígitos enviado por e-mail.
+ * Entrada da área do aluno: entrar com ID do aluno + ID da turma + senha, ou
+ * criar a conta no primeiro acesso. Só cria conta quem está na lista de IDs
+ * que o professor cadastrou para a turma.
  */
 export default function Entrar() {
   const id = useId()
   const navegar = useNavigate()
   const { recarregar } = useSessao()
 
-  const [etapa, setEtapa] = useState<Etapa>('ids')
-  const [primeiroAcesso, setPrimeiroAcesso] = useState(false)
-  const [ids, setIds] = useState<IdsDeAcesso>({ matricula: '', codigoTurma: '' })
-  const [cadastro, setCadastro] = useState({ nome: '', email: '', aceiteTermo: false, querComunicacao: false })
-  const [emailMascarado, setEmailMascarado] = useState('')
-  const [codigo, setCodigo] = useState('')
+  const [aba, setAba] = useState<'entrar' | 'criar'>('entrar')
+  const [login, setLogin] = useState({ matricula: '', codigoTurma: '', senha: '' })
+  const [cadastro, setCadastro] = useState<CadastroDeAluno>(CADASTRO_VAZIO)
+  const [errosDoCadastro, setErrosDoCadastro] = useState<ErrosDeCadastro>({})
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const [espera, setEspera] = useState(0)
 
-  // Contagem para liberar "Reenviar código" (60 s, seção 7).
-  useEffect(() => {
-    if (espera <= 0) return
-    const relogio = setTimeout(() => setEspera((s) => s - 1), 1000)
-    return () => clearTimeout(relogio)
-  }, [espera])
-
-  const totalEtapas = primeiroAcesso ? 3 : 2
-  const numeroEtapa = etapa === 'ids' ? 1 : etapa === 'cadastro' ? 2 : totalEtapas
-
-  async function executar(acao: () => Promise<void>) {
+  async function executar(acao: () => Promise<unknown>) {
     if (ocupado) return
     setOcupado(true)
     setErro(null)
     try {
       await acao()
+      await recarregar()
+      navegar('/aluno', { replace: true })
     } catch (falha) {
       setErro((falha as Error).message)
     } finally {
@@ -69,66 +134,44 @@ export default function Entrar() {
     }
   }
 
-  function irParaCodigo(mascarado: string) {
-    setEmailMascarado(mascarado)
-    setCodigo('')
-    setEspera(ESPERA_REENVIO_S)
-    setEtapa('codigo')
-  }
-
-  function aoEnviarIds(evento: FormEvent) {
+  function aoEntrar(evento: FormEvent) {
     evento.preventDefault()
-    if (ids.matricula.trim() === '' || ids.codigoTurma.trim() === '') {
-      setErro('Informe o ID do aluno e o ID da turma.')
+    if (login.matricula.trim() === '' || login.codigoTurma.trim() === '' || login.senha === '') {
+      setErro('Informe o ID do aluno, o ID da turma e a senha.')
       return
     }
-    void executar(async () => {
-      const resultado = await verificarIds(ids)
-      if (resultado.etapa === 'cadastro') {
-        setPrimeiroAcesso(true)
-        setEtapa('cadastro')
-      } else {
-        irParaCodigo(resultado.emailMascarado)
-      }
-    })
+    void executar(() => entrar({ matricula: login.matricula, codigoTurma: login.codigoTurma }, login.senha))
   }
 
-  function aoEnviarCadastro(evento: FormEvent) {
+  function aoCriar(evento: FormEvent) {
     evento.preventDefault()
-    if (cadastro.nome.trim() === '') return setErro('Informe seu nome completo.')
-    if (!emailValido(cadastro.email)) return setErro('Confira o e-mail informado.')
-    if (!cadastro.aceiteTermo) return setErro('É preciso aceitar o termo de uso para continuar.')
-    void executar(async () => {
-      const resultado = await cadastrar(ids, cadastro)
-      if (resultado.etapa === 'codigo') irParaCodigo(resultado.emailMascarado)
-    })
+    const encontrados = validarCadastro(cadastro)
+    setErrosDoCadastro(encontrados)
+    if (Object.keys(encontrados).length > 0) {
+      setErro(null)
+      return
+    }
+    void executar(() =>
+      cadastrar(
+        { matricula: cadastro.matricula, codigoTurma: cadastro.codigoTurma },
+        { nome: cadastro.nome, senha: cadastro.senha, aceiteTermo: cadastro.aceiteTermo },
+      ),
+    )
   }
 
-  function aoEnviarCodigo(evento: FormEvent) {
-    evento.preventDefault()
-    if (codigo.length !== 6) return setErro('Informe o código de 6 dígitos.')
-    void executar(async () => {
-      try {
-        const codigoTurma = await confirmarCodigo(ids, codigo)
-        await recarregar()
-        navegar(`/aluno/turmas/${codigoTurma}`, { replace: true })
-      } catch (falha) {
-        // Campo cheio não aceita novos dígitos: limpa para o aluno digitar de novo.
-        setCodigo('')
-        throw falha
-      }
-    })
+  function alterarCadastro<C extends keyof CadastroDeAluno>(campo: C, valor: CadastroDeAluno[C]) {
+    setCadastro((atual) => ({ ...atual, [campo]: valor }))
+    setErrosDoCadastro((atuais) => ({ ...atuais, [campo]: undefined }))
   }
 
-  function reenviar() {
-    void executar(async () => {
-      const resultado = primeiroAcesso ? await cadastrar(ids, cadastro) : await verificarIds(ids)
-      if (resultado.etapa === 'codigo') irParaCodigo(resultado.emailMascarado)
-    })
-  }
+  const campo = (nome: keyof CadastroDeAluno) => ({
+    id: `${id}-c-${nome}`,
+    'aria-invalid': errosDoCadastro[nome] ? true : undefined,
+    'aria-describedby': errosDoCadastro[nome] ? `${id}-c-${nome}-erro` : undefined,
+  })
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="plataforma flex min-h-screen flex-col">
       <header className="border-b-2">
         <div className="mx-auto flex max-w-[1080px] items-center justify-between px-4 py-3 md:px-10">
           <Link to="/" className="font-mono text-lg font-bold tracking-[-0.02em]">
@@ -138,152 +181,151 @@ export default function Entrar() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[460px] flex-1 flex-col justify-center px-4 py-12">
+      <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-center px-4 py-12">
         <Card>
           <CardHeader>
-            <p className="eyebrow text-muted-foreground" aria-live="polite">
-              Etapa {numeroEtapa} de {totalEtapas}
-            </p>
-            <Progress value={(numeroEtapa / totalEtapas) * 100} aria-label="Progresso da entrada" className="h-1.5" />
             <CardTitle>
-              <h1 className="text-[22px]">
-                {etapa === 'ids' && 'Entrar na turma'}
-                {etapa === 'cadastro' && 'Seu cadastro'}
-                {etapa === 'codigo' && 'Código de acesso'}
-              </h1>
+              <h1 className="text-[26px]">Área do aluno</h1>
             </CardTitle>
             <CardDescription>
-              {etapa === 'ids' && 'Use o ID de aluno e o ID da turma informados pelo professor.'}
-              {etapa === 'cadastro' && 'Este é seu primeiro acesso. Confirme seus dados para continuar.'}
-              {etapa === 'codigo' && `Enviamos um código de 6 dígitos para ${emailMascarado}. Ele vale por 10 minutos.`}
+              Use o ID de aluno e o ID da turma que o professor passou em sala.
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="flex flex-col gap-5">
-            {erro && (
-              <Alert variant="destructive" className="bg-card">
-                <TriangleAlertIcon aria-hidden="true" />
-                <AlertDescription>{erro}</AlertDescription>
-              </Alert>
-            )}
+          <CardContent>
+            <Tabs
+              value={aba}
+              onValueChange={(valor) => {
+                setAba(valor as 'entrar' | 'criar')
+                setErro(null)
+              }}
+              className="gap-5"
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="entrar">Entrar</TabsTrigger>
+                <TabsTrigger value="criar">Criar conta</TabsTrigger>
+              </TabsList>
 
-            {etapa === 'ids' && (
-              <form onSubmit={aoEnviarIds} noValidate className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`${id}-matricula`}>ID do aluno</Label>
-                  <Input
-                    id={`${id}-matricula`}
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    value={ids.matricula}
-                    onChange={(e) => setIds({ ...ids, matricula: e.target.value })}
+              <TabsContent value="entrar">
+                <form onSubmit={aoEntrar} noValidate className="flex flex-col gap-5">
+                  <Aviso mensagem={erro} />
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={`${id}-matricula`}>ID do aluno</Label>
+                    <Input
+                      id={`${id}-matricula`}
+                      autoComplete="username"
+                      autoCapitalize="characters"
+                      value={login.matricula}
+                      onChange={(e) => setLogin({ ...login, matricula: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={`${id}-turma`}>ID da turma</Label>
+                    <Input
+                      id={`${id}-turma`}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      placeholder="Ex.: TURMA-001"
+                      value={login.codigoTurma}
+                      onChange={(e) => setLogin({ ...login, codigoTurma: e.target.value })}
+                    />
+                  </div>
+                  <CampoDeSenha
+                    id={`${id}-senha`}
+                    rotulo="Senha"
+                    autoComplete="current-password"
+                    valor={login.senha}
+                    aoMudar={(senha) => setLogin({ ...login, senha })}
                   />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`${id}-turma`}>ID da turma</Label>
-                  <Input
-                    id={`${id}-turma`}
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    placeholder="Ex.: EXCIA-CPS-2610"
-                    value={ids.codigoTurma}
-                    onChange={(e) => setIds({ ...ids, codigoTurma: e.target.value })}
-                  />
-                </div>
-                <Enviar ocupado={ocupado}>Continuar</Enviar>
-              </form>
-            )}
+                  <Enviar ocupado={ocupado}>Entrar</Enviar>
+                  <p className="text-[13px] text-muted-foreground">
+                    Primeiro acesso?{' '}
+                    <button type="button" onClick={() => setAba('criar')} className="cursor-pointer font-semibold text-foreground underline">
+                      Crie sua conta
+                    </button>
+                    . Esqueceu a senha? Peça ao professor para redefinir.
+                  </p>
+                </form>
+              </TabsContent>
 
-            {etapa === 'cadastro' && (
-              <form onSubmit={aoEnviarCadastro} noValidate className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`${id}-nome`}>Nome completo</Label>
-                  <Input
-                    id={`${id}-nome`}
-                    autoComplete="name"
-                    value={cadastro.nome}
-                    onChange={(e) => setCadastro({ ...cadastro, nome: e.target.value })}
+              <TabsContent value="criar">
+                <form onSubmit={aoCriar} noValidate className="flex flex-col gap-5">
+                  <Aviso mensagem={erro} />
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={`${id}-c-nome`}>Nome completo</Label>
+                    <Input
+                      {...campo('nome')}
+                      autoComplete="name"
+                      value={cadastro.nome}
+                      onChange={(e) => alterarCadastro('nome', e.target.value)}
+                    />
+                    <ErroDoCampo id={`${id}-c-nome-erro`} mensagem={errosDoCadastro.nome} />
+                  </div>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor={`${id}-c-matricula`}>ID do aluno</Label>
+                      <Input
+                        {...campo('matricula')}
+                        autoComplete="username"
+                        autoCapitalize="characters"
+                        value={cadastro.matricula}
+                        onChange={(e) => alterarCadastro('matricula', e.target.value)}
+                      />
+                      <ErroDoCampo id={`${id}-c-matricula-erro`} mensagem={errosDoCadastro.matricula} />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor={`${id}-c-codigoTurma`}>ID da turma</Label>
+                      <Input
+                        {...campo('codigoTurma')}
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        placeholder="Ex.: TURMA-001"
+                        value={cadastro.codigoTurma}
+                        onChange={(e) => alterarCadastro('codigoTurma', e.target.value)}
+                      />
+                      <ErroDoCampo id={`${id}-c-codigoTurma-erro`} mensagem={errosDoCadastro.codigoTurma} />
+                    </div>
+                  </div>
+                  <CampoDeSenha
+                    id={`${id}-c-senha`}
+                    rotulo="Senha"
+                    autoComplete="new-password"
+                    valor={cadastro.senha}
+                    aoMudar={(senha) => alterarCadastro('senha', senha)}
+                    erro={errosDoCadastro.senha}
+                    ajuda={`Ao menos ${SENHA_MINIMA} caracteres, com letras e números.`}
                   />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`${id}-email`}>E-mail</Label>
-                  <Input
-                    id={`${id}-email`}
-                    type="email"
-                    autoComplete="email"
-                    value={cadastro.email}
-                    onChange={(e) => setCadastro({ ...cadastro, email: e.target.value })}
+                  <CampoDeSenha
+                    id={`${id}-c-confirmacao`}
+                    rotulo="Confirmar senha"
+                    autoComplete="new-password"
+                    valor={cadastro.confirmacao}
+                    aoMudar={(senha) => alterarCadastro('confirmacao', senha)}
+                    erro={errosDoCadastro.confirmacao}
                   />
-                  <p className="text-xs text-muted-foreground">O código de acesso chega neste e-mail.</p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    id={`${id}-termo`}
-                    checked={cadastro.aceiteTermo}
-                    onCheckedChange={(marcado) => setCadastro({ ...cadastro, aceiteTermo: marcado === true })}
-                  />
-                  <Label htmlFor={`${id}-termo`} className="leading-snug font-medium">
-                    <span>
-                      Li e aceito o{' '}
-                      <Link to="/privacidade" target="_blank" className="font-bold underline">
-                        termo de uso e a política de privacidade
-                      </Link>
-                      .
-                    </span>
-                  </Label>
-                </div>
-                {/* LGPD: comunicação é opcional e nunca vem ligada. */}
-                <div className="flex items-start justify-between gap-4 border-t border-divisor pt-4">
-                  <Label htmlFor={`${id}-comunicacao`} className="leading-snug font-medium">
-                    Quero receber comunicações do professor por e-mail
-                  </Label>
-                  <Switch
-                    id={`${id}-comunicacao`}
-                    checked={cadastro.querComunicacao}
-                    onCheckedChange={(ligado) => setCadastro({ ...cadastro, querComunicacao: ligado })}
-                  />
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Enviar ocupado={ocupado}>Enviar código</Enviar>
-                  <Button type="button" variant="link" onClick={() => setEtapa('ids')}>
-                    Voltar
-                  </Button>
-                </div>
-              </form>
-            )}
-
-            {etapa === 'codigo' && (
-              <form onSubmit={aoEnviarCodigo} noValidate className="flex flex-col gap-5">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor={`${id}-codigo`}>Código</Label>
-                  <InputOTP
-                    id={`${id}-codigo`}
-                    maxLength={6}
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    autoComplete="one-time-code"
-                    value={codigo}
-                    onChange={setCodigo}
-                    aria-invalid={erro ? true : undefined}
-                  >
-                    <InputOTPGroup>
-                      {[0, 1, 2, 3, 4, 5].map((indice) => (
-                        <InputOTPSlot key={indice} index={indice} className="size-11 border-2 text-lg font-bold" />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
-                <Enviar ocupado={ocupado}>Entrar</Enviar>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" variant="link" disabled={espera > 0 || ocupado} onClick={reenviar}>
-                    {espera > 0 ? `Reenviar código em ${espera} s` : 'Reenviar código'}
-                  </Button>
-                  <Button type="button" variant="link" onClick={() => setEtapa('ids')}>
-                    Trocar os IDs
-                  </Button>
-                </div>
-              </form>
-            )}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        {...campo('aceiteTermo')}
+                        checked={cadastro.aceiteTermo}
+                        onCheckedChange={(marcado) => alterarCadastro('aceiteTermo', marcado === true)}
+                      />
+                      <Label htmlFor={`${id}-c-aceiteTermo`} className="leading-snug font-normal">
+                        <span>
+                          Li e aceito o{' '}
+                          <Link to="/privacidade" target="_blank" className="font-semibold underline">
+                            termo de uso e a política de privacidade
+                          </Link>
+                          .
+                        </span>
+                      </Label>
+                    </div>
+                    <ErroDoCampo id={`${id}-c-aceiteTermo-erro`} mensagem={errosDoCadastro.aceiteTermo} />
+                  </div>
+                  <Enviar ocupado={ocupado}>Criar conta</Enviar>
+                </form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </main>
