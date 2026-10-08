@@ -680,7 +680,7 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 ### Acesso
 
 - ID, turma ou senha que não batem → sempre a mesma mensagem genérica "ID, turma ou senha incorretos." (não revelar qual campo falhou). Conta bloqueada só é informada depois da senha certa.
-- Mais de 5 tentativas inválidas por IP em 15 min → bloquear por 15 min.
+- Não há bloqueio por número de tentativas na entrada do aluno (decisão do dono, 08/10/2026): em sala a turma inteira usa o mesmo IP, e erros de digitação de alguns travavam todos. O formulário de contato mantém o limite por IP.
 - Criar conta com ID que já tem conta → "Já existe uma conta para este ID. Use a aba Entrar.". ID fora da lista do professor → mensagem genérica.
 - Senha fraca (menos de 8 caracteres ou sem letras e números) → recusada na tela e de novo no servidor.
 - Turma passa para 'encerrada' → aluno ainda entra e vê calendário, materiais e resultados em modo leitura; não há sessão ao vivo.

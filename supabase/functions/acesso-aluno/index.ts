@@ -9,11 +9,15 @@
 // é verificada pelo Supabase Auth (hash bcrypt); esta função nunca a grava.
 // O e-mail interno da conta não sai do servidor: por isso o login passa por
 // aqui, e não direto pelo cliente.
+//
+// Não há bloqueio por número de tentativas (decisão do dono, 08/10/2026): em
+// sala a turma inteira sai pelo mesmo IP, e alguns erros de digitação travavam
+// todo mundo. A mensagem de erro continua genérica.
 
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { apagarConta, criarConta, problemaDaSenha } from '../_shared/alunos.ts'
 import { clienteAdmin, clienteAnonimo } from '../_shared/clientes.ts'
-import { cabecalhosCors, erro, hashDoIp, lerCorpo, responder, texto } from '../_shared/http.ts'
+import { cabecalhosCors, erro, lerCorpo, responder, texto } from '../_shared/http.ts'
 
 const VERSAO_TERMO = Deno.env.get('VERSAO_TERMO') ?? '2026-10-v1'
 
@@ -22,7 +26,6 @@ const VERSAO_TERMO = Deno.env.get('VERSAO_TERMO') ?? '2026-10-v1'
 const CREDENCIAIS = 'ID, turma ou senha incorretos.'
 const NAO_ENCONTRADO = 'Não encontramos essa combinação. Confira com o professor.'
 const BLOQUEADA = 'Sua conta está temporariamente bloqueada. Entre em contato com seu professor.'
-const TENTATIVAS = 'Muitas tentativas. Aguarde 15 minutos e tente de novo.'
 const FALHA = 'Não foi possível concluir agora. Tente de novo.'
 
 type Vinculo = {
@@ -90,21 +93,6 @@ Deno.serve(async (req) => {
 
   const admin = clienteAdmin()
   const anonimo = clienteAnonimo()
-  const ipHash = await hashDoIp(req)
-
-  // Mais de 5 tentativas inválidas por IP em 15 min bloqueiam por 15 min.
-  // Aqui só se consulta; a tentativa é registrada quando a identificação falha.
-  const { data: liberado, error: erroLimite } = await admin.rpc('dentro_do_limite', {
-    p_acao: 'acesso_aluno',
-    p_ip_hash: ipHash,
-    p_maximo: 5,
-    p_janela: '15 minutes',
-    p_registrar: false,
-  })
-  if (erroLimite) return erro(req, 500, FALHA)
-  if (!liberado) return erro(req, 429, TENTATIVAS, 'tentativas')
-
-  const registrarFalha = () => admin.from('limite_tentativa').insert({ acao: 'acesso_aluno', ip_hash: ipHash })
   const vinculo = matricula && codigoTurma ? await buscarVinculo(admin, matricula, codigoTurma) : null
 
   const entrarNoAuth = (email: string) => anonimo.auth.signInWithPassword({ email, password: senha })
@@ -112,13 +100,11 @@ Deno.serve(async (req) => {
   // --- entrar -------------------------------------------------------------
   if (acao === 'entrar') {
     if (!vinculo?.inscricao || senha === '') {
-      await registrarFalha()
       return erro(req, 401, CREDENCIAIS, 'credenciais')
     }
 
     const { data: login, error: erroLogin } = await entrarNoAuth(vinculo.inscricao.email)
     if (erroLogin || !login.session) {
-      await registrarFalha()
       return erro(req, 401, CREDENCIAIS, 'credenciais')
     }
 
@@ -139,7 +125,6 @@ Deno.serve(async (req) => {
   // --- cadastrar ----------------------------------------------------------
   // Conta nova só com turma ativa e ID autorizado e desbloqueado.
   if (!vinculo || !vinculo.turmaAtiva || !vinculo.ativo) {
-    await registrarFalha()
     return erro(req, 404, NAO_ENCONTRADO, 'nao_encontrado')
   }
   if (vinculo.inscricao) {

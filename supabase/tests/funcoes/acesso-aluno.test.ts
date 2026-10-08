@@ -79,22 +79,11 @@ describe('acesso-aluno · entrar', () => {
     expect(r.corpo.erro).toBe(CREDENCIAIS)
   })
 
-  it('bloqueia o IP depois de 5 tentativas inválidas, mesmo com a senha certa', async () => {
-    for (let i = 0; i < 5; i++) expect((await entrar({ senha: OUTRA })).status).toBe(401)
-    const travado = await entrar()
-    expect(travado.status).toBe(429)
-    expect(travado.corpo.codigo).toBe('tentativas')
-    // Outro IP continua entrando.
-    expect((await entrar({}, { ip: '198.51.100.99' })).status).toBe(200)
-  })
-
-  it('entradas corretas não contam para o limite, e o IP é guardado só como hash', async () => {
-    for (let i = 0; i < 8; i++) expect((await entrar()).status).toBe(200)
+  it('não trava por número de tentativas: depois de errar várias vezes, a senha certa entra', async () => {
+    for (let i = 0; i < 12; i++) expect((await entrar({ senha: OUTRA })).status).toBe(401)
+    expect((await entrar()).status).toBe(200)
+    // Nada sobre quem tentou é guardado.
     expect(amb.banco.linhas('limite_tentativa')).toHaveLength(0)
-
-    await entrar({ senha: OUTRA }, { ip: '203.0.113.50' })
-    expect(String(amb.banco.linhas('limite_tentativa')[0].ip_hash)).toMatch(/^[0-9a-f]{64}$/)
-    expect(JSON.stringify(amb.banco.tabelas)).not.toContain('203.0.113.50')
   })
 
   it('turma encerrada: quem já tem conta ainda entra', async () => {
