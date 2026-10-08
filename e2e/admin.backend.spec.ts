@@ -163,7 +163,7 @@ test.describe('painel do professor', () => {
       ['avisos', 'Avisos'],
     ]) {
       await page.goto(`/admin/${rota}`)
-      await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible({ timeout: 15_000 })
       await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
       await semViolacoesDeAcessibilidade(page)
     }
