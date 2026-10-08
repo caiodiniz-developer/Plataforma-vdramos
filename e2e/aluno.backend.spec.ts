@@ -112,11 +112,16 @@ test.describe('painel do aluno', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
     await expect(page.getByText('Atividades realizadas').locator('..').locator('..')).toContainText('2/3')
-    await expect(page.getByText('75%')).toBeVisible()
+    await expect(page.getByText('Desempenho', { exact: true }).locator('..').locator('..')).toContainText('75%')
+    // Progresso geral: 2 atividades + 1 conteúdo, de 3 + 1 publicados.
+    await expect(page.getByRole('progressbar', { name: 'Progresso geral' })).toHaveAttribute('aria-valuenow', '75')
+    await expect(page.getByText('Próximo passo · questão para praticar')).toBeVisible()
     await expect(page.getByRole('link', { name: /Tabelas dinâmicas na prática/ })).toBeVisible()
     await expect(page.getByText('Dúvida sobre PROCX')).toBeVisible()
     await expect(page.getByText('Prova na quarta')).toBeVisible()
     await semViolacoesDeAcessibilidade(page)
+    // Nada passa da largura da tela (no celular, cartões com texto longo não empurram a página).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
     expect(api.naoTratadas).toEqual([])
   })
 
