@@ -54,21 +54,32 @@ export function Conversa({ mensagens, eu, nomeDoOutro, aoEnviar, vazio }: Props)
       {mensagens.length === 0 ? (
         <p className="border-2 border-dashed px-4 py-8 text-center text-sm text-muted-foreground">{vazio}</p>
       ) : (
-        <ol className="flex max-h-[55vh] flex-col gap-3 overflow-y-auto border-2 p-4" aria-label="Mensagens">
+        <ol className="flex max-h-[55vh] min-h-[220px] flex-col gap-4 overflow-y-auto border-2 p-4" aria-label="Mensagens">
           {mensagens.map((m) => {
             const minha = m.autor === eu
             return (
-              <li key={m.id} className={cn('flex max-w-[85%] flex-col gap-1', minha ? 'self-end items-end' : 'self-start items-start')}>
-                <span className="eyebrow text-[10px] text-muted-foreground">{minha ? 'Você' : nomeDoOutro}</span>
-                <p
+              <li key={m.id} className={cn('flex max-w-[88%] items-start gap-2', minha ? 'flex-row-reverse self-end' : 'self-start')}>
+                <span
+                  aria-hidden="true"
                   className={cn(
-                    'border-2 px-3 py-2 text-[15px] break-words whitespace-pre-wrap',
-                    minha ? 'border-secondary bg-secondary text-secondary-foreground' : 'bg-muted',
+                    'destaque mt-5 flex size-9 shrink-0 items-center justify-center text-xs',
+                    minha ? 'bg-primary text-primary-foreground' : 'bg-tinta text-papel',
                   )}
                 >
-                  {m.texto}
-                </p>
-                <span className="font-mono text-[11px] text-muted-foreground">{formatarDataHora(m.created_at, 'America/Sao_Paulo')}</span>
+                  {(minha ? 'Você' : nomeDoOutro)[0]}
+                </span>
+                <div className={cn('flex min-w-0 flex-col gap-1', minha ? 'items-end' : 'items-start')}>
+                  <span className="eyebrow text-[10px] text-muted-foreground">{minha ? 'Você' : nomeDoOutro}</span>
+                  <p
+                    className={cn(
+                      'border-2 px-3 py-2 text-[15px] break-words whitespace-pre-wrap',
+                      minha ? 'border-primary bg-primary text-primary-foreground' : 'border-divisor bg-muted',
+                    )}
+                  >
+                    {m.texto}
+                  </p>
+                  <span className="font-mono text-[11px] text-muted-foreground">{formatarDataHora(m.created_at, 'America/Sao_Paulo')}</span>
+                </div>
               </li>
             )
           })}
