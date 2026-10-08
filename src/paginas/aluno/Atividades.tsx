@@ -64,8 +64,10 @@ function ListaDeAtividades({ modo }: { modo: 'atividades' | 'questoes' }) {
           const acertos = respondidas.reduce((soma, a) => soma + a.acertos, 0)
           const visiveis = doModo.filter(
             (a) =>
-              contem(busca, a.titulo, a.descricao, a.categoria) &&
-              (filtro === 'todas' || (filtro === 'concluidas' ? a.respondida : !a.respondida)),
+              // A que está aberta continua na tela depois de respondida, para o aluno ver o resultado.
+              a.id === aberta ||
+              (contem(busca, a.titulo, a.descricao, a.categoria) &&
+                (filtro === 'todas' || (filtro === 'concluidas' ? a.respondida : !a.respondida))),
           )
 
           if (doModo.length === 0) {
