@@ -9,9 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { ROTULO_TIPO_CONTEUDO, urlAssinada, type Conteudo, type TipoConteudo } from '@/dados/apoio'
 import { excluirConteudo, listarTodosOsConteudos, listarTurmas, salvarConteudo, type DadosDoConteudo } from '@/dados/professor'
@@ -266,14 +265,17 @@ export default function Conteudos() {
 
           return (
             <>
-              <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                <TabsList className="max-w-full justify-start overflow-x-auto">
-                  <TabsTrigger value="todos">Todos</TabsTrigger>
-                  <TabsTrigger value="aulas">Aulas</TabsTrigger>
-                  <TabsTrigger value="extras">Aulas extras</TabsTrigger>
-                  <TabsTrigger value="materiais">Materiais</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <FiltroDeLista
+                rotulo="Filtrar por tipo"
+                valor={filtro}
+                aoMudar={setFiltro}
+                opcoes={[
+                  ['todos', 'Todos'],
+                  ['aulas', 'Aulas'],
+                  ['extras', 'Aulas extras'],
+                  ['materiais', 'Materiais'],
+                ]}
+              />
 
               {conteudos.length === 0 ? (
                 <Vazio icone={BookOpenIcon} titulo="Nenhum conteúdo ainda" texto="Publique uma aula extra, um texto, um vídeo ou um arquivo para a turma.">

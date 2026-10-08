@@ -5,9 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { urlAssinada } from '@/dados/apoio'
 import { definirStatusDaDuvida, listarDuvidas, responderDuvida, type DuvidaDoProfessor } from '@/dados/professor'
 import { contem } from '@/dominio/busca'
@@ -100,14 +99,17 @@ export default function Duvidas() {
           return (
             <>
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                  <TabsList className="max-w-full justify-start overflow-x-auto">
-                    <TabsTrigger value="aberta">Pendentes</TabsTrigger>
-                    <TabsTrigger value="respondida">Respondidas</TabsTrigger>
-                    <TabsTrigger value="arquivada">Arquivadas</TabsTrigger>
-                    <TabsTrigger value="todas">Todas</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <FiltroDeLista
+                  rotulo="Filtrar por status"
+                  valor={filtro}
+                  aoMudar={setFiltro}
+                  opcoes={[
+                    ['aberta', 'Pendentes'],
+                    ['respondida', 'Respondidas'],
+                    ['arquivada', 'Arquivadas'],
+                    ['todas', 'Todas'],
+                  ]}
+                />
                 <p className="text-sm text-muted-foreground">
                   <span className="destaque text-base text-foreground">{pendentes}</span> {pendentes === 1 ? 'pendente' : 'pendentes'}
                 </p>

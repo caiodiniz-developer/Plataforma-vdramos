@@ -20,9 +20,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import type { Conteudo } from '@/dados/apoio'
 import {
@@ -576,14 +575,17 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
 
           return (
             <>
-              <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                <TabsList className="max-w-full justify-start overflow-x-auto">
-                  <TabsTrigger value="todas">Todas</TabsTrigger>
-                  <TabsTrigger value="rascunho">Rascunhos</TabsTrigger>
-                  <TabsTrigger value="publicada">Publicadas</TabsTrigger>
-                  <TabsTrigger value="encerrada">Encerradas</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <FiltroDeLista
+                rotulo="Filtrar por status"
+                valor={filtro}
+                aoMudar={setFiltro}
+                opcoes={[
+                  ['todas', 'Todas'],
+                  ['rascunho', 'Rascunhos'],
+                  ['publicada', 'Publicadas'],
+                  ['encerrada', 'Encerradas'],
+                ]}
+              />
 
               {atividades.length === 0 ? (
                 <Vazio

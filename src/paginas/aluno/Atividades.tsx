@@ -3,9 +3,8 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { RespostaDaAtividade } from '@/componentes/atividade/RespostaDaAtividade'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
 import { minhasAtividades, type AtividadeDoAluno } from '@/dados/apoio'
 import { contem, percentualDe } from '@/dominio/busca'
@@ -82,13 +81,16 @@ function ListaDeAtividades({ modo }: { modo: 'atividades' | 'questoes' }) {
           return (
             <>
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-                  <TabsList>
-                    <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
-                    <TabsTrigger value="concluidas">Concluídas</TabsTrigger>
-                    <TabsTrigger value="todas">Todas</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <FiltroDeLista
+                  rotulo="Filtrar por situação"
+                  valor={filtro}
+                  aoMudar={setFiltro}
+                  opcoes={[
+                    ['pendentes', 'Pendentes'],
+                    ['concluidas', 'Concluídas'],
+                    ['todas', 'Todas'],
+                  ]}
+                />
                 <p className="text-sm text-muted-foreground">
                   <span className="destaque text-base text-foreground">
                     {respondidas.length}/{doModo.length}

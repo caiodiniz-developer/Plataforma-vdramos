@@ -113,6 +113,42 @@ export function Busca({
   )
 }
 
+/**
+ * Filtro de lista em botões de alternância. Não é um conjunto de abas: não há
+ * painel por opção, só a mesma lista filtrada, então cada botão informa o
+ * estado com `aria-pressed`.
+ */
+export function FiltroDeLista<T extends string>({
+  valor,
+  aoMudar,
+  opcoes,
+  rotulo,
+}: {
+  valor: T
+  aoMudar: (valor: T) => void
+  opcoes: [valor: T, rotulo: string][]
+  rotulo: string
+}) {
+  return (
+    <div role="group" aria-label={rotulo} className="inline-flex max-w-full gap-1 overflow-x-auto bg-muted p-1">
+      {opcoes.map(([opcao, texto]) => (
+        <button
+          key={opcao}
+          type="button"
+          aria-pressed={opcao === valor}
+          onClick={() => aoMudar(opcao)}
+          className={cn(
+            'min-h-9 shrink-0 border-2 px-3 text-sm font-semibold whitespace-nowrap',
+            opcao === valor ? 'border-foreground bg-background text-foreground' : 'border-transparent text-foreground/70 hover:text-foreground',
+          )}
+        >
+          {texto}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 /** Cartão de número do painel. */
 export function Numero({
   rotulo,

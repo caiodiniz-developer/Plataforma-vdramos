@@ -3,8 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
 import { conteudosAcessados, listarConteudos, ROTULO_TIPO_CONTEUDO, type Conteudo } from '@/dados/apoio'
 import { contem } from '@/dominio/busca'
@@ -42,15 +41,7 @@ export default function Conteudos() {
         <Busca valor={busca} aoMudar={setBusca} rotulo="Pesquisar conteúdos" />
       </CabecalhoDaPagina>
 
-      <Tabs value={filtro} onValueChange={(v) => setFiltro(v as Filtro)}>
-        <TabsList className="flex-wrap">
-          {FILTROS.map((f) => (
-            <TabsTrigger key={f.valor} value={f.valor}>
-              {f.rotulo}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <FiltroDeLista rotulo="Filtrar por tipo" valor={filtro} aoMudar={setFiltro} opcoes={FILTROS.map((f) => [f.valor, f.rotulo])} />
 
       <Carregado consulta={consulta}>
         {({ conteudos, acessados }) => {

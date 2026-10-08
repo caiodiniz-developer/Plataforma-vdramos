@@ -9,9 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { Busca, CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
+import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { Conversa } from '@/componentes/plataforma/Conversa'
 import { ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
@@ -177,13 +176,16 @@ export function Feedbacks() {
           const visiveis = feedbacks.filter((f) => filtro === 'todos' || f.lido === (filtro === 'lidos'))
           return (
             <>
-              <Tabs value={filtro} onValueChange={(v) => setFiltro(v as FiltroDeFeedback)}>
-                <TabsList>
-                  <TabsTrigger value="nao_lidos">Não lidos</TabsTrigger>
-                  <TabsTrigger value="lidos">Lidos</TabsTrigger>
-                  <TabsTrigger value="todos">Todos</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <FiltroDeLista
+                rotulo="Filtrar por leitura"
+                valor={filtro}
+                aoMudar={setFiltro}
+                opcoes={[
+                  ['nao_lidos', 'Não lidos'],
+                  ['lidos', 'Lidos'],
+                  ['todos', 'Todos'],
+                ]}
+              />
 
               {visiveis.length === 0 ? (
                 <Vazio
