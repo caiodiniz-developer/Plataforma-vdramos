@@ -294,6 +294,21 @@ export async function marcarNotificacoesLidas(ids?: string[]): Promise<void> {
 }
 
 /** Avisa quando chega notificação nova para o usuário logado (Realtime). */
+/**
+ * Avisa quando uma tabela muda (Realtime). O banco só entrega as linhas que a
+ * RLS deixa quem está logado ver; `filtro` (ex.: `inscricao_id=eq.<id>`) reduz
+ * o que chega. Devolve a função que encerra a assinatura.
+ */
+export function assinarMudancas(tabela: 'duvida' | 'mensagem_privada', aoMudar: () => void, filtro?: string): () => void {
+  const canal = supabase()
+    .channel(`${tabela}:${filtro ?? 'todas'}:${crypto.randomUUID()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: tabela, ...(filtro ? { filter: filtro } : {}) }, aoMudar)
+    .subscribe()
+  return () => {
+    void supabase().removeChannel(canal)
+  }
+}
+
 export function assinarNotificacoes(perfilId: string, aoChegar: () => void): () => void {
   const canal = supabase()
     .channel(`notificacoes:${perfilId}`)
