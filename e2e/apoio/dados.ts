@@ -44,6 +44,69 @@ export type Cenario = {
   contatos: Record<string, unknown>[]
   /** A atividade já foi respondida pelo aluno. */
   respondida: boolean
+  /** Plataforma de apoio: o que o professor publicou e o que os alunos enviaram. */
+  conteudos: Record<string, unknown>[]
+  duvidas: Record<string, unknown>[]
+  avisos: Record<string, unknown>[]
+  alunos: Record<string, unknown>[]
+}
+
+const ALUNA = { turma: { codigo: CODIGO }, inscricao: { perfil: { nome: 'Ana Souza' }, turma: { codigo: CODIGO } } }
+
+export const CONTEUDO = {
+  id: 'c0c0c0c0-0000-4000-8000-000000000001',
+  turma_id: TURMA_ID,
+  tipo: 'aula_extra',
+  titulo: 'Tabelas dinâmicas na prática',
+  descricao: 'Aula extra com o passo a passo.',
+  corpo_md: '## Passo a passo\n\nSelecione os dados e insira a tabela dinâmica.',
+  capa_path: null,
+  arquivo_path: null,
+  video_url: null,
+  link_url: 'https://exemplo.com/planilha',
+  publicado: true,
+  publicado_em: '2026-10-14T22:00:00Z',
+  created_at: '2026-10-14T22:00:00Z',
+}
+
+const QUESTAO_DO_ALUNO = {
+  id: 'dddddddd-0000-4000-8000-000000000002',
+  tipo: 'questao',
+  titulo: 'Referência absoluta',
+  descricao: null,
+  status: 'publicada',
+  prazo_em: null,
+  dificuldade: 'facil',
+  categoria: 'Excel',
+  conteudo_id: null,
+  publicada_em: '2026-10-14T22:00:00Z',
+  itens: 1,
+  respondida: false,
+  acertos: 0,
+  respondida_em: null,
+}
+
+function alunoDoProfessor(mudancas: Record<string, unknown>) {
+  return {
+    aluno_autorizado_id: 'aa000000-0000-4000-8000-000000000001',
+    turma_id: TURMA_ID,
+    turma_codigo: CODIGO,
+    matricula: 'ALUNO-0001',
+    ativo: true,
+    nome: 'Ana Souza',
+    inscricao_id: 'insc1',
+    perfil_id: ANA.id,
+    cadastrado_em: '2026-10-14T22:00:00Z',
+    ultimo_acesso_em: '2026-10-15T01:30:00Z',
+    situacao: 'ativo',
+    conteudos_acessados: 1,
+    atividades_realizadas: 2,
+    questoes_respondidas: 4,
+    questoes_corretas: 3,
+    duvidas: 1,
+    feedbacks: 0,
+    ...mudancas,
+  }
 }
 
 export function cenarioPadrao(mudancas: Partial<Cenario> = {}): Cenario {
@@ -66,6 +129,41 @@ export function cenarioPadrao(mudancas: Partial<Cenario> = {}): Cenario {
     contatos: [
       { id: 'c1', nome: 'Carla Dias', email: 'carla@empresa.com', assunto: 'palestra', assunto_outro: null, mensagem: 'Gostaria de uma palestra sobre letramento em dados.', lida: false, created_at: '2026-10-15T01:30:00Z' },
       { id: 'c2', nome: 'Diego Reis', email: 'diego@empresa.com', assunto: 'outro', assunto_outro: 'Mentoria', mensagem: 'Podemos conversar sobre mentoria?', lida: true, created_at: '2026-10-12T15:00:00Z' },
+    ],
+    conteudos: [CONTEUDO],
+    duvidas: [
+      {
+        id: 'du1',
+        inscricao_id: 'insc1',
+        titulo: 'Dúvida sobre PROCX',
+        pergunta: 'Quando usar PROCX no lugar de PROCV?',
+        categoria: 'Excel',
+        anexo_path: null,
+        status: 'aberta',
+        resposta: null,
+        respondida_em: null,
+        created_at: '2026-10-15T01:00:00Z',
+        conteudo: null,
+        ...ALUNA,
+      },
+    ],
+    avisos: [{ id: 'av1', turma_id: null, titulo: 'Prova na quarta', texto: 'Tragam o notebook carregado.', created_at: '2026-10-15T00:00:00Z' }],
+    alunos: [
+      alunoDoProfessor({}),
+      alunoDoProfessor({
+        aluno_autorizado_id: 'aa000000-0000-4000-8000-000000000002',
+        matricula: 'ALUNO-0002',
+        nome: null,
+        inscricao_id: null,
+        perfil_id: null,
+        cadastrado_em: null,
+        ultimo_acesso_em: null,
+        situacao: 'sem_conta',
+        atividades_realizadas: 0,
+        questoes_respondidas: 0,
+        questoes_corretas: 0,
+        duvidas: 0,
+      }),
     ],
     ...mudancas,
   }
@@ -171,15 +269,36 @@ export function respostasDe(c: Cenario): Respostas {
                 id: 'insc1',
                 ultimo_acesso_em: '2026-10-15T01:30:00Z',
                 created_at: '2026-10-14T22:00:00Z',
-                turma: { codigo: CODIGO, instituicao: 'SENAI', cidade: 'Campinas', status: c.statusDaTurma, curso: { nome: curso.nome } },
+                turma: { id: TURMA_ID, codigo: CODIGO, instituicao: 'SENAI', cidade: 'Campinas', status: c.statusDaTurma, curso: { nome: curso.nome } },
               },
             ],
       pergunta: () => c.perguntas,
       pergunta_autoria: () => [],
       pergunta_voto: () => [{ pergunta_id: 'p2' }],
       mensagem: () => c.mensagens,
-      atividade: () => c.atividades,
+      atividade: (chamada) => (chamada.metodo === 'HEAD' ? [{}, {}, {}] : c.atividades),
       atividade_resposta: () => [],
+      conteudo: (chamada) => {
+        const id = filtrado(chamada, 'id')
+        const linhas = c.conteudos.filter((x) => id === undefined || x.id === id)
+        return chamada.metodo === 'HEAD' ? linhas.slice(0, 1) : linhas
+      },
+      conteudo_acesso: () => [],
+      duvida: (chamada) => (chamada.metodo === 'HEAD' ? c.duvidas.filter((d) => d.status === 'aberta') : c.duvidas),
+      feedback: () => [],
+      mensagem_privada: () => [],
+      aviso: () => c.avisos,
+      notificacao: () => [
+        { id: 'n1', tipo: 'aviso', titulo: 'Novo aviso: Prova na quarta', link: '/aluno/avisos', lida_em: null, created_at: '2026-10-15T00:00:00Z' },
+      ],
+      vw_aluno: () => c.alunos,
+      vw_atividade_recente: (chamada) =>
+        chamada.metodo === 'HEAD'
+          ? [{}, {}]
+          : [{ quando: '2026-10-15T01:00:00Z', tipo: 'duvida', aluno: 'Ana Souza', descricao: 'enviou uma dúvida: Dúvida sobre PROCX' }],
+      vw_turma_resumo: () => [
+        { id: TURMA_ID, codigo: CODIGO, curso_id: curso.id, curso_nome: curso.nome, instituicao: 'SENAI', cidade: 'Campinas', modalidade: 'presencial', data_inicio: '2026-10-14', data_fim: '2026-10-28', vagas: 20, status: c.statusDaTurma, autorizados: 2, inscritos: 1 },
+      ],
       sessao_ao_vivo: () => (c.statusDaSessao === 'aberta' ? [{}] : []),
       contato_mensagem: (chamada) => {
         const lida = filtrado(chamada, 'lida')
@@ -202,6 +321,19 @@ export function respostasDe(c: Cenario): Respostas {
         return 'nova'
       },
       atividade_para_aluno: () => atividadeParaAluno(c),
+      minhas_atividades: () => [QUESTAO_DO_ALUNO],
+      meu_progresso: () => ({
+        atividades_realizadas: 2,
+        atividades_disponiveis: 3,
+        questoes_respondidas: 4,
+        questoes_corretas: 3,
+        conteudos_acessados: 1,
+        conteudos_disponiveis: c.conteudos.length,
+        duvidas_abertas: c.duvidas.length,
+        duvidas_respondidas: 0,
+      }),
+      registrar_acesso: () => null,
+      marcar_mensagens_lidas: () => null,
       responder_atividade: () => {
         c.respondida = true
         return null
