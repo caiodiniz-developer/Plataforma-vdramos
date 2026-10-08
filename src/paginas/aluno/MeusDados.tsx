@@ -141,12 +141,15 @@ export default function MeusDados() {
                   <dt className="eyebrow text-muted-foreground">Nome</dt>
                   <dd className="font-bold">{dados.perfil.nome}</dd>
                 </div>
-                <div>
-                  <dt className="eyebrow text-muted-foreground">E-mail</dt>
-                  <dd className="font-bold break-all">{dados.perfil.email}</dd>
-                </div>
+                {/* A conta do aluno usa um endereço interno, que não é dado dele: não aparece. */}
+                {!dados.perfil.email.endsWith('.invalid') && (
+                  <div>
+                    <dt className="eyebrow text-muted-foreground">E-mail</dt>
+                    <dd className="font-bold break-all">{dados.perfil.email}</dd>
+                  </div>
+                )}
               </dl>
-              <p className="mt-4 text-xs text-muted-foreground">A troca de e-mail é feita pelo professor.</p>
+              <p className="mt-4 text-xs text-muted-foreground">Para corrigir o nome ou trocar a senha, fale com o professor.</p>
             </Cartao>
 
             <Cartao titulo="Turmas">
