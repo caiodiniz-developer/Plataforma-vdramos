@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { contem, percentualDe } from './busca'
+import { contem, iniciais, percentualDe } from './busca'
+
+describe('iniciais', () => {
+  it('usa o primeiro e o último nome', () => {
+    expect(iniciais('Ana Souza')).toBe('AS')
+    expect(iniciais('  maria  da silva  santos ')).toBe('MS')
+  })
+
+  it('aceita um nome só e nome vazio', () => {
+    expect(iniciais('Ana')).toBe('A')
+    expect(iniciais('   ')).toBe('?')
+  })
+})
 
 describe('contem', () => {
   it('ignora acentos e maiúsculas', () => {
