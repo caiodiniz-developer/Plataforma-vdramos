@@ -1,5 +1,5 @@
 import { ArchiveIcon, ArchiveRestoreIcon, CircleHelpIcon, Loader2Icon, PaperclipIcon, SearchXIcon } from 'lucide-react'
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
-import { urlAssinada } from '@/dados/apoio'
+import { assinarMudancas, urlAssinada } from '@/dados/apoio'
 import { definirStatusDaDuvida, listarDuvidas, responderDuvida, type DuvidaDoProfessor } from '@/dados/professor'
 import { contem } from '@/dominio/busca'
 import { formatarDataHora } from '@/dominio/tempo'
@@ -69,6 +69,9 @@ async function abrirAnexo(caminho: string) {
 /** Dúvidas que os alunos enviaram ao professor. */
 export default function Duvidas() {
   const consulta = useConsulta(listarDuvidas, [])
+  const { recarregar } = consulta
+  // Dúvida nova de um aluno entra na lista na hora.
+  useEffect(() => assinarMudancas('duvida', recarregar), [recarregar])
   const [filtro, setFiltro] = useState<Filtro>('aberta')
   const [busca, setBusca] = useState('')
   const [respondendo, setRespondendo] = useState<string | null>(null)

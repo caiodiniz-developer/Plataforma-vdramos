@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, Loader2Icon, MegaphoneIcon, MessageSquareIcon, MessagesSquareIcon, PlusIcon, Trash2Icon } from 'lucide-react'
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { Conversa } from '@/componentes/plataforma/Conversa'
-import { ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
+import { assinarMudancas, ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
 import {
   excluirAviso,
   listarConversas,
@@ -47,6 +47,11 @@ async function carregarConversa(inscricaoId: string) {
 
 function ConversaAberta({ conversa, aoMudar }: { conversa: ConversaDoProfessor; aoMudar: () => void }) {
   const consulta = useConsulta(() => carregarConversa(conversa.inscricao_id), [conversa.inscricao_id])
+  const { recarregar } = consulta
+  useEffect(
+    () => assinarMudancas('mensagem_privada', recarregar, `inscricao_id=eq.${conversa.inscricao_id}`),
+    [conversa.inscricao_id, recarregar],
+  )
   return (
     <Carregado consulta={consulta}>
       {(mensagens) => (
@@ -69,6 +74,9 @@ function ConversaAberta({ conversa, aoMudar }: { conversa: ConversaDoProfessor; 
 /** Conversas privadas com os alunos. Para iniciar uma, use "Enviar mensagem" em Alunos. */
 export function Conversas() {
   const consulta = useConsulta(listarConversas, [])
+  const { recarregar } = consulta
+  // Mensagem nova de qualquer aluno atualiza a lista e o contador de não lidas.
+  useEffect(() => assinarMudancas('mensagem_privada', recarregar), [recarregar])
   const [parametros, setParametros] = useSearchParams()
   const [busca, setBusca] = useState('')
   const aberta = parametros.get('aluno')
