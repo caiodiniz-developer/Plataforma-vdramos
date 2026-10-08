@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { cenarioPadrao, CODIGO, QUIZ, respostasDe } from './apoio/dados'
-import { ANA, sessaoDe, simularSupabase } from './apoio/supabase'
+import { cenarioPadrao, CODIGO, CONTEUDO, QUIZ, respostasDe } from './apoio/dados'
+import { ANA, SENHA_DE_TESTE, sessaoDe, simularSupabase } from './apoio/supabase'
 
 async function semViolacoesDeAcessibilidade(page: Page) {
   const resultado = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
@@ -11,15 +11,13 @@ async function semViolacoesDeAcessibilidade(page: Page) {
 }
 
 test.describe('entrada do aluno', () => {
-  test('login recorrente: IDs, código e chegada na turma', async ({ page }) => {
-    const cenario = cenarioPadrao()
-    const respostas = respostasDe(cenario)
+  test('entra com ID do aluno, ID da turma e senha e chega ao painel', async ({ page }) => {
+    const respostas = respostasDe(cenarioPadrao())
     respostas.funcoes = {
       'acesso-aluno': (chamada) => {
-        const corpo = chamada.corpo as { acao: string; codigo?: string }
-        if (corpo.acao === 'verificar') return { etapa: 'codigo', email_mascarado: 'a•••@empresa.com' }
-        if (corpo.codigo !== '123456') return { status: 401, corpo: { erro: 'Código inválido ou expirado.', codigo: 'codigo' } }
-        // Código certo: a partir daqui o Auth reconhece a aluna.
+        const corpo = chamada.corpo as Record<string, string>
+        if (corpo.senha !== SENHA_DE_TESTE) return { status: 401, corpo: { erro: 'ID, turma ou senha incorretos.', codigo: 'credenciais' } }
+        // Senha certa: a partir daqui o Auth reconhece a aluna.
         api.entrarComo(ANA)
         return { sessao: sessaoDe(ANA), codigo_turma: CODIGO }
       },
@@ -30,80 +28,148 @@ test.describe('entrada do aluno', () => {
     await page.goto('/aluno/entrar')
     await page.getByLabel('ID do aluno').fill('aluno-0001')
     await page.getByLabel('ID da turma').fill('excia-cps-2610')
-    await page.getByRole('button', { name: 'Continuar' }).click()
-
-    await expect(page.getByText(/a•••@empresa\.com/)).toBeVisible()
-    await expect(page.getByRole('button', { name: /Reenviar código em/ })).toBeDisabled()
-
-    // Código errado: fica na etapa e mostra o erro do servidor.
-    await page.getByRole('textbox').fill('000000')
+    await page.getByRole('textbox', { name: 'Senha' }).fill('outra-coisa-9')
     await page.getByRole('button', { name: 'Entrar' }).click()
-    await expect(page.getByRole('alert')).toContainText('Código inválido ou expirado.')
+    // Senha errada: fica na tela, com a mensagem genérica e os IDs digitados.
+    await expect(page.getByRole('alert')).toContainText('ID, turma ou senha incorretos.')
+    await expect(page.getByLabel('ID do aluno')).toHaveValue('aluno-0001')
 
-    await page.getByRole('textbox').fill('123456')
+    await page.getByRole('textbox', { name: 'Senha' }).fill(SENHA_DE_TESTE)
     await page.getByRole('button', { name: 'Entrar' }).click()
 
-    await expect(page).toHaveURL(`/aluno/turmas/${CODIGO}`)
-    await expect(page.getByRole('heading', { level: 1, name: 'Excel Básico com IA Generativa' })).toBeVisible()
+    await expect(page).toHaveURL('/aluno')
+    await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
 
     // O app normaliza os IDs antes de enviar.
-    const [verificar] = api.enviadas('acesso-aluno')
-    expect(verificar.corpo).toMatchObject({ acao: 'verificar', matricula: 'ALUNO-0001', codigo_turma: 'EXCIA-CPS-2610' })
+    const [primeira] = api.enviadas('acesso-aluno')
+    expect(primeira.corpo).toMatchObject({ acao: 'entrar', matricula: 'ALUNO-0001', codigo_turma: 'EXCIA-CPS-2610' })
   })
 
-  test('primeiro acesso: cadastro exige o termo e envia a escolha de comunicação', async ({ page }) => {
-    const respostas = respostasDe(cenarioPadrao())
-    respostas.funcoes = {
-      'acesso-aluno': (chamada) => {
-        const corpo = chamada.corpo as { acao: string }
-        return corpo.acao === 'verificar' ? { etapa: 'cadastro' } : { etapa: 'codigo', email_mascarado: 'n•••@empresa.com' }
-      },
-    }
-    const api = await simularSupabase(page, respostas)
-
-    await page.goto('/aluno/entrar')
-    await page.getByLabel('ID do aluno').fill('ALUNO-0002')
-    await page.getByLabel('ID da turma').fill(CODIGO)
-    await page.getByRole('button', { name: 'Continuar' }).click()
-
-    await expect(page.getByText('Etapa 2 de 3')).toBeVisible()
-    await expect(page.getByRole('switch')).not.toBeChecked()
-    await semViolacoesDeAcessibilidade(page)
-
-    await page.getByLabel('Nome completo').fill('Nina Prado')
-    await page.getByLabel('E-mail', { exact: true }).fill('nina@empresa.com')
-    await page.getByRole('button', { name: 'Enviar código' }).click()
-    await expect(page.getByText('É preciso aceitar o termo de uso para continuar.')).toBeVisible()
-
-    await page.getByRole('checkbox').check()
-    await page.getByRole('switch').click()
-    await page.getByRole('button', { name: 'Enviar código' }).click()
-    await expect(page.getByText('Etapa 3 de 3')).toBeVisible()
-
-    const cadastro = api.enviadas('acesso-aluno').find((c) => (c.corpo as { acao: string }).acao === 'cadastrar')
-    expect(cadastro?.corpo).toMatchObject({
-      nome: 'Nina Prado',
-      email: 'nina@empresa.com',
-      aceite_termo: true,
-      quer_comunicacao: true,
-    })
-  })
-
-  test('IDs que não batem mostram a mensagem genérica do servidor', async ({ page }) => {
+  test('conta bloqueada mostra o aviso do professor e não entra', async ({ page }) => {
     const respostas = respostasDe(cenarioPadrao())
     respostas.funcoes = {
       'acesso-aluno': () => ({
-        status: 404,
-        corpo: { erro: 'Não encontramos essa combinação. Confira com o professor.', codigo: 'nao_encontrado' },
+        status: 403,
+        corpo: { erro: 'Sua conta está temporariamente bloqueada. Entre em contato com seu professor.', codigo: 'bloqueado' },
       }),
     }
     await simularSupabase(page, respostas)
     await page.goto('/aluno/entrar')
-    await page.getByLabel('ID do aluno').fill('X')
-    await page.getByLabel('ID da turma').fill('Y')
-    await page.getByRole('button', { name: 'Continuar' }).click()
-    await expect(page.getByRole('alert')).toContainText('Não encontramos essa combinação. Confira com o professor.')
-    await expect(page.getByText('Etapa 1 de 2')).toBeVisible()
+    await page.getByLabel('ID do aluno').fill('ALUNO-0001')
+    await page.getByLabel('ID da turma').fill(CODIGO)
+    await page.getByRole('textbox', { name: 'Senha' }).fill(SENHA_DE_TESTE)
+    await page.getByRole('button', { name: 'Entrar' }).click()
+    await expect(page.getByRole('alert')).toContainText(
+      'Sua conta está temporariamente bloqueada. Entre em contato com seu professor.',
+    )
+    await expect(page).toHaveURL('/aluno/entrar')
+    await semViolacoesDeAcessibilidade(page)
+  })
+
+  test('primeiro acesso: criar conta exige o termo e já entra', async ({ page }) => {
+    const respostas = respostasDe(cenarioPadrao())
+    respostas.funcoes = {
+      'acesso-aluno': () => {
+        api.entrarComo(ANA)
+        return { sessao: sessaoDe(ANA), codigo_turma: CODIGO }
+      },
+    }
+    const api = await simularSupabase(page, respostas)
+    const forte = SENHA_DE_TESTE + '-1'
+
+    await page.goto('/aluno/entrar')
+    await page.getByRole('tab', { name: 'Criar conta' }).click()
+    await semViolacoesDeAcessibilidade(page)
+
+    await page.getByLabel('Nome completo').fill('Ana Souza')
+    await page.getByLabel('ID do aluno').fill('aluno-0001')
+    await page.getByLabel('ID da turma').fill(CODIGO)
+    await page.getByRole('textbox', { name: 'Senha', exact: true }).fill(forte)
+    await page.getByRole('textbox', { name: 'Confirmar senha' }).fill(forte)
+    await page.getByRole('button', { name: 'Criar conta' }).click()
+    await expect(page.getByText('É preciso aceitar o termo de uso para continuar.')).toBeVisible()
+    expect(api.enviadas('acesso-aluno')).toHaveLength(0)
+
+    await page.getByRole('checkbox').check()
+    await page.getByRole('button', { name: 'Criar conta' }).click()
+    await expect(page).toHaveURL('/aluno')
+
+    const [cadastro] = api.enviadas('acesso-aluno')
+    expect(cadastro.corpo).toMatchObject({ acao: 'cadastrar', nome: 'Ana Souza', matricula: 'ALUNO-0001', aceite_termo: true })
+  })
+})
+
+test.describe('painel do aluno', () => {
+  async function irPara(page: Page, isMobile: boolean, rotulo: string) {
+    if (isMobile) await page.getByRole('button', { name: 'Abrir menu' }).click()
+    await page.getByRole('navigation', { name: 'Área do aluno' }).getByRole('link', { name: rotulo }).click()
+  }
+
+  test('mostra progresso, conteúdos, dúvidas e avisos vindos do banco', async ({ page }) => {
+    const cenario = cenarioPadrao()
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
+    await expect(page.getByText('Atividades realizadas').locator('..').locator('..')).toContainText('2/3')
+    await expect(page.getByText('75%')).toBeVisible()
+    await expect(page.getByRole('link', { name: /Tabelas dinâmicas na prática/ })).toBeVisible()
+    await expect(page.getByText('Dúvida sobre PROCX')).toBeVisible()
+    await expect(page.getByText('Prova na quarta')).toBeVisible()
+    await semViolacoesDeAcessibilidade(page)
+    expect(api.naoTratadas).toEqual([])
+  })
+
+  test('abre um conteúdo, registra o acesso e envia uma dúvida', async ({ page, isMobile }) => {
+    const cenario = cenarioPadrao()
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    await irPara(page, isMobile, 'Conteúdos')
+    await expect(page).toHaveURL('/aluno/conteudos')
+    await page.getByRole('link', { name: /Tabelas dinâmicas na prática/ }).click()
+    await expect(page).toHaveURL(`/aluno/conteudos/${CONTEUDO.id}`)
+    await expect(page.getByRole('heading', { level: 1, name: 'Tabelas dinâmicas na prática' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Passo a passo' })).toBeVisible()
+    await expect.poll(() => api.enviadas('rpc/registrar_acesso').length).toBeGreaterThan(0)
+    await semViolacoesDeAcessibilidade(page)
+
+    await irPara(page, isMobile, 'Minhas dúvidas')
+    await page.getByRole('button', { name: 'Nova dúvida' }).click()
+    await page.getByRole('button', { name: 'Enviar dúvida' }).click()
+    await expect(page.getByRole('alert')).toContainText('Dê um título à dúvida')
+    await page.getByLabel('Título').fill('Gráfico de barras')
+    await page.getByLabel('Pergunta').fill('Como inverter os eixos?')
+    await page.getByRole('button', { name: 'Enviar dúvida' }).click()
+
+    await expect.poll(() => api.enviadas('/rest/v1/duvida').length).toBe(1)
+    expect(api.enviadas('/rest/v1/duvida')[0].corpo).toMatchObject({
+      inscricao_id: 'insc1',
+      titulo: 'Gráfico de barras',
+      pergunta: 'Como inverter os eixos?',
+    })
+    expect(api.naoTratadas).toEqual([])
+  })
+
+  test('questões, mensagens, feedback e avisos abrem sem erro', async ({ page }) => {
+    const cenario = cenarioPadrao()
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    for (const [rota, titulo] of [
+      ['questoes', 'Questões'],
+      ['atividades', 'Atividades'],
+      ['mensagens', 'Mensagens'],
+      ['feedback', 'Feedback'],
+      ['avisos', 'Avisos'],
+    ]) {
+      await page.goto(`/aluno/${rota}`)
+      await expect(page.getByRole('heading', { level: 1, name: titulo })).toBeVisible()
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+      await semViolacoesDeAcessibilidade(page)
+    }
+    await page.goto('/aluno/questoes')
+    await expect(page.getByRole('heading', { name: 'Referência absoluta' })).toBeVisible()
+    expect(api.naoTratadas).toEqual([])
   })
 })
 
