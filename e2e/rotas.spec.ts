@@ -30,7 +30,7 @@ test.describe('rotas públicas e protegidas', () => {
   test('área do aluno sem sessão redireciona para a entrada', async ({ page }) => {
     await page.goto('/aluno/turmas/EXCIA-CPS-2610')
     await expect(page).toHaveURL('/aluno/entrar')
-    await expect(page.getByRole('heading', { name: 'Entrar na turma' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Área do aluno' })).toBeVisible()
   })
 
   test('sala ao vivo e meus dados também exigem sessão', async ({ page }) => {
@@ -40,11 +40,20 @@ test.describe('rotas públicas e protegidas', () => {
     await expect(page).toHaveURL('/aluno/entrar')
   })
 
+  test('o painel do aluno e as suas telas exigem sessão', async ({ page }) => {
+    for (const rota of ['/aluno', '/aluno/conteudos', '/aluno/atividades', '/aluno/duvidas', '/aluno/mensagens']) {
+      await page.goto(rota)
+      await expect(page).toHaveURL('/aluno/entrar')
+    }
+  })
+
   test('painel do admin sem sessão redireciona para a entrada do professor', async ({ page }) => {
     await page.goto('/admin')
     await expect(page).toHaveURL('/admin/entrar')
-    await page.goto('/admin/mensagens')
-    await expect(page).toHaveURL('/admin/entrar')
+    for (const rota of ['/admin/mensagens', '/admin/alunos', '/admin/conteudos', '/admin/questoes', '/admin/duvidas']) {
+      await page.goto(rota)
+      await expect(page).toHaveURL('/admin/entrar')
+    }
     await expect(page.getByLabel('E-mail')).toBeVisible()
     await expect(page.getByLabel('Senha')).toBeVisible()
   })
@@ -53,7 +62,8 @@ test.describe('rotas públicas e protegidas', () => {
     await page.goto('/aluno/entrar')
     await page.getByLabel('ID do aluno').fill('ALUNO-0001')
     await page.getByLabel('ID da turma').fill('EXCIA-CPS-2610')
-    await page.getByRole('button', { name: 'Continuar' }).click()
+    await page.getByRole('textbox', { name: 'Senha' }).fill('qualquer-valor-1')
+    await page.getByRole('button', { name: 'Entrar' }).click()
     await expect(page.getByRole('alert')).toContainText('backend ainda não foi configurado')
   })
 })
