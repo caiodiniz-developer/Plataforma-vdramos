@@ -1,4 +1,4 @@
-import { Loader2Icon, MegaphoneIcon, MessageSquareHeartIcon } from 'lucide-react'
+import { Loader2Icon, MegaphoneIcon, MessageSquareHeartIcon, MessageSquareIcon } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +49,8 @@ export function Mensagens() {
       <CabecalhoDaPagina
         rotulo="Professor"
         titulo="Mensagens"
+        icone={MessageSquareIcon}
+        cor="roxo"
         descricao="Conversa privada com o professor. Nenhum colega vê o que você escreve aqui."
       />
       <Carregado consulta={consulta}>
@@ -102,6 +104,8 @@ export function Feedback() {
       <CabecalhoDaPagina
         rotulo="Professor"
         titulo="Feedback"
+        icone={MessageSquareHeartIcon}
+        cor="verde"
         descricao="Conte o que está difícil, o que pode melhorar ou como foi uma aula. Só o professor lê."
       />
       <Card>
@@ -174,7 +178,7 @@ export function Avisos() {
 
   return (
     <>
-      <CabecalhoDaPagina rotulo="Turma" titulo="Avisos" descricao="Comunicados do professor para a sua turma." />
+      <CabecalhoDaPagina rotulo="Turma" titulo="Avisos" descricao="Comunicados do professor para a sua turma." icone={MegaphoneIcon} cor="verde" />
       <Carregado consulta={consulta}>
         {(avisos) =>
           avisos.length === 0 ? (
@@ -183,7 +187,7 @@ export function Avisos() {
             <ul className="flex flex-col gap-4">
               {avisos.map((a) => (
                 <li key={a.id}>
-                  <Card>
+                  <Card className="border-l-8 border-l-green">
                     <CardContent className="flex flex-col gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant={a.turma_id ? 'outline' : 'default'}>{a.turma_id ? `Turma ${turma.codigo}` : 'Todos os alunos'}</Badge>

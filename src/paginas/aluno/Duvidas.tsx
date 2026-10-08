@@ -96,6 +96,8 @@ export default function Duvidas() {
       <CabecalhoDaPagina
         rotulo="Professor"
         titulo="Minhas dúvidas"
+        icone={CircleHelpIcon}
+        cor="laranja"
         descricao="Pergunte direto ao professor. Só você e ele veem a sua dúvida."
       >
         <Button onClick={() => setAberto(true)}>
@@ -135,7 +137,7 @@ export default function Duvidas() {
                           </Button>
                         )}
                         {d.resposta ? (
-                          <div className="flex flex-col gap-1 border-l-2 border-primary bg-muted py-3 pr-3 pl-4">
+                          <div className="flex flex-col gap-1 border-l-4 border-green bg-muted py-3 pr-3 pl-4">
                             <p className="eyebrow text-muted-foreground">
                               Resposta do professor
                               {d.respondida_em && ` · ${formatarDataHora(d.respondida_em, FUSO)}`}

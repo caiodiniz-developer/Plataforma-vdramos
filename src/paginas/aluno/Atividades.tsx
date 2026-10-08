@@ -48,6 +48,8 @@ function ListaDeAtividades({ modo }: { modo: 'atividades' | 'questoes' }) {
       <CabecalhoDaPagina
         rotulo="Prática"
         titulo={ehQuestoes ? 'Questões' : 'Atividades'}
+        icone={ehQuestoes ? ListChecksIcon : ClipboardListIcon}
+        cor={ehQuestoes ? 'laranja' : 'azul'}
         descricao={
           ehQuestoes
             ? 'Responda e veja na hora se acertou, com a explicação do professor.'
