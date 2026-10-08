@@ -592,6 +592,8 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 - Layout: barra lateral (menu em `Sheet` no celular) com Início, Conteúdos, Atividades, Questões, Minhas dúvidas, Mensagens, Feedback, Avisos, Aulas presenciais e Meus dados; sino de notificações no cabeçalho.
 - Toda lista tem carregamento (`Skeleton`), erro com "Tentar de novo" e estado vazio com ícone e texto.
+- Visual: barra lateral em Tinta com a faixa das quatro cores na identificação da turma; cada seção tem um selo na sua cor de acento (com o par de texto que passa em contraste). O Início abre com um bloco em Tinta: saudação, progresso geral (atividades feitas + conteúdos abertos sobre o total publicado) e o próximo passo sugerido (atividade pendente de prazo mais próximo, depois questão, depois conteúdo não aberto), seguido de números, atalhos e listas.
+- Tempo real: a conversa com o professor e a resposta das dúvidas aparecem na tela aberta, sem recarregar; no painel do professor, dúvidas e mensagens novas entram na lista na hora.
 
 ### Turma do aluno `/aluno/turmas/:codigo`
 
