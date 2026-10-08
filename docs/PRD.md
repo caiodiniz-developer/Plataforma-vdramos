@@ -8,6 +8,8 @@ Site pessoal de Vitor Ramos (vitorramos.com) com duas partes no mesmo app. A par
 
 Referência de estrutura de turma: o cronograma "Excel Básico com IA Generativa" (SENAI Campinas, 5 encontros de 14/10 a 28/10/2026, 18:45–22:45, 20 vagas), em que cada encontro é dividido em blocos tipados (abertura, teoria, prática, perguntas, intervalo, margem) e ligado a situações de aprendizagem (SA).
 
+**Plataforma de apoio (decisão de 07/10/2026).** A área restrita é uma plataforma de apoio para os alunos do professor no SENAI, não uma escola online: as aulas continuam presenciais. O fluxo é sempre professor → banco de dados → alunos. O professor publica conteúdos e aulas extras, questões, atividades e avisos, e acompanha cada aluno; o aluno estuda, responde, tira dúvidas e fala com o professor em privado. Tudo o que o aluno vê foi cadastrado pelo professor no painel existente (não há um segundo sistema de administração nem dados fixos no frontend). A sala ao vivo, o calendário e os materiais dos encontros continuam valendo.
+
 ## 2. Stack e convenções técnicas
 
 - Backend: Supabase (Postgres + Auth + Realtime + Storage + Edge Functions). Assumido: stack sugerida, não especificada no brief.
@@ -19,7 +21,9 @@ Referência de estrutura de turma: o cronograma "Excel Básico com IA Generativa
 - Realtime (Postgres Changes) nas tabelas `sessao_ao_vivo`, `pergunta`, `mensagem`, `atividade` e `atividade_resposta`, filtrado por `sessao_ao_vivo_id`. A sessão entra na publicação porque é por ela que o aluno recebe abertura, encerramento e os avisos de moderação (pergunta ocultada e mensagem removida deixam de ser visíveis a ele, então o UPDATE dessas linhas não chega pelo Realtime).
 - Escrita do aluno sempre por função (RPC), nunca direto na tabela: `enviar_pergunta`, `alternar_voto`, `enviar_mensagem` e `responder_atividade`. O aluno lê itens e opções de atividade pela função `atividade_para_aluno`, que não devolve o gabarito antes da resposta. Motivo: a RLS filtra linhas, não colunas.
 - Testes: regras de negócio em `src/dominio` (Vitest) e políticas de RLS em `supabase/tests`, rodando as migrations num Postgres em memória (PGlite).
-- Validação de ID de aluno + ID de turma e envio de código de acesso ficam numa Edge Function (`acesso-aluno`), nunca no cliente.
+- Entrada do aluno com ID do aluno + ID da turma + senha, conferida na Edge Function `acesso-aluno`, nunca no cliente. A senha fica no Supabase Auth (hash bcrypt); a conta usa um endereço interno `aluno-<id>@alunos.vitorramos.invalid`, que nunca sai do servidor nem aparece na tela. O aluno não informa e-mail.
+- Criar aluno com senha, redefinir senha e remover aluno passam pela Edge Function `admin-alunos` (só admin, JWT verificado), porque mexem no Auth com a service role. Bloquear, desbloquear e editar nome ou ID são escritas comuns protegidas por RLS.
+- Realtime também em `notificacao`, `duvida` e `mensagem_privada`.
 - Assumido: um único admin (o professor). Papel guardado em `perfil.papel`.
 
 ## 3. Modelo de dados
@@ -293,6 +297,24 @@ A autoria fica fora de `pergunta` porque o Realtime entrega a linha inteira a qu
 | correta | boolean | nullable | Calculado no insert para quiz |
 | tempo\_resposta\_ms | int | nullable | Tempo desde a publicação (quiz ao vivo) |
 
+### Plataforma de apoio
+
+Migration `20261008090000_plataforma_de_apoio.sql`. RLS em todas: o admin lê e escreve tudo; o aluno lê só o que foi publicado para a turma dele (ou para todas) e só as próprias dúvidas, mensagens, feedbacks e notificações. Aluno com `aluno_autorizado.ativo = false` (bloqueado) não lê nada.
+
+| Tabela | Campos principais | Para que serve |
+| --- | --- | --- |
+| `conteudo` | `turma_id` (nulo = todas as turmas), `tipo` (aula, aula\_extra, texto, video, link, arquivo), `titulo`, `descricao`, `corpo_md`, `capa_path`, `arquivo_path`, `video_url`, `link_url`, `publicado`, `publicado_em` | Conteúdos e aulas extras. Data futura em `publicado_em` agenda a publicação |
+| `conteudo_acesso` | `conteudo_id`, `inscricao_id`, `primeiro_em`, `ultimo_em` | Quem abriu o quê (função `registrar_acesso`) |
+| `duvida` | `inscricao_id`, `turma_id`, `conteudo_id`, `titulo`, `pergunta`, `categoria`, `anexo_path`, `status` (aberta, respondida, arquivada), `resposta`, `respondida_em` | Dúvida do aluno para o professor |
+| `mensagem_privada` | `inscricao_id`, `autor` (aluno, professor), `texto`, `lida_em` | Conversa privada aluno ↔ professor |
+| `feedback` | `inscricao_id`, `turma_id`, `tipo` (dificuldade, sugestao, problema, avaliacao\_aula, comentario), `texto`, `lido` | Feedback do aluno |
+| `aviso` | `turma_id` (nulo = todos), `titulo`, `texto` | Comunicado do professor |
+| `notificacao` | `perfil_id`, `tipo`, `titulo`, `link`, `lida_em` | Criada por gatilho: conteúdo publicado, atividade publicada, aviso, dúvida respondida, mensagem do professor |
+
+`atividade` ganhou os tipos `questao` (questão avulsa, corrigida na hora) e `licao` (atividade fora da sala ao vivo) e as colunas `descricao`, `instrucoes_md`, `prazo_em`, `arquivo_path`, `conteudo_id`, `dificuldade` (facil, medio, dificil) e `categoria`. `responder_atividade` corrige qualquer item com gabarito e recusa resposta depois do prazo.
+
+Funções do aluno: `minhas_atividades(turma)`, `meu_progresso(turma)`, `registrar_acesso(conteudo)`, `marcar_mensagens_lidas()`. Views do professor (`security_invoker`): `vw_aluno` (uma linha por ID cadastrado, com situação sem\_conta | ativo | bloqueado, último acesso e contadores de progresso) e `vw_atividade_recente` (acessos, respostas, dúvidas, feedbacks e mensagens dos alunos, em ordem de data). Arquivos no bucket privado `materiais`: conteúdos e atividades seguem a RLS da tabela; o anexo da dúvida fica em `duvidas/<id do usuário>/`.
+
 ### Infraestrutura (sem acesso pelo cliente)
 
 **limite\_tentativa** — tabela `limite_tentativa` (contagem por IP para os limites das Edge Functions; só a service role acessa)
@@ -369,18 +391,17 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Aluno
 
-### F3 — Primeiro acesso (cadastro na turma)
+### F3 — Primeiro acesso (criar conta)
 
-- Entrada (UI): ID do aluno (matrícula) + ID da turma.
-- Comportamento: Edge Function `acesso-aluno` normaliza (trim, upper) e busca `aluno_autorizado` com `ativo = true` em `turma` com `status = 'ativa'`. Se não há `inscricao` para esse ID, abre a etapa de cadastro: nome, e-mail, aceite do termo de uso (obrigatório), switch "Quero receber comunicações do professor por e-mail" (opcional, desligado por padrão). Envia código OTP de 6 dígitos ao e-mail (Supabase Auth `signInWithOtp`). Com o código válido: cria ou reaproveita `perfil` pelo e-mail, cria `inscricao`, grava dois registros em `consentimento` (`uso_dados_pedagogicos` = true pelo aceite; `comunicacao_professor` = valor do switch) com `versao_termo` vigente e `origem = 'cadastro'`.
-- Saída: sessão autenticada; redireciona para `/aluno/turmas/:codigo`.
-- Assumido: o login só com os dois IDs não é seguro (IDs circulam em listas de chamada), por isso o e-mail é confirmado por código.
+- Entrada (UI): aba "Criar conta" em `/aluno/entrar`: nome completo, ID do aluno, ID da turma, senha, confirmação da senha e aceite do termo de uso (obrigatório).
+- Comportamento: a Edge Function `acesso-aluno` (ação `cadastrar`) normaliza os IDs (trim, upper), exige que o ID esteja na lista do professor (`aluno_autorizado`) e ainda não tenha conta, valida a senha (8 a 72 caracteres, com letras e números), cria o usuário no Supabase Auth, o `perfil`, a `inscricao` e o consentimento `uso_dados_pedagogicos`. O professor também pode criar o aluno já com senha pelo painel (F22); nesse caso o aluno aceita o termo no primeiro acesso.
+- Saída: sessão autenticada; redireciona para `/aluno`.
 
 ### F4 — Login recorrente
 
-- Entrada (UI): ID do aluno + ID da turma.
-- Comportamento: `acesso-aluno` encontra a `inscricao`, dispara OTP para o e-mail do `perfil` e mostra o e-mail mascarado (ex.: v•••@gmail.com). Código válido → sessão de 30 dias; atualiza `inscricao.ultimo_acesso_em`.
-- Saída: `/aluno/turmas/:codigo`. Aluno com mais de uma inscrição vê um `Select` para trocar de turma.
+- Entrada (UI): ID do aluno + ID da turma + senha.
+- Comportamento: `acesso-aluno` (ação `entrar`) encontra a conta pelo par de IDs e confere a senha no Auth. Qualquer falha de ID, turma ou senha devolve a mesma mensagem: "ID, turma ou senha incorretos.". Com a senha certa e o aluno bloqueado: "Sua conta está temporariamente bloqueada. Entre em contato com seu professor.". Atualiza `inscricao.ultimo_acesso_em`.
+- Saída: `/aluno`. Aluno com mais de uma inscrição troca de turma no menu.
 
 ### F5 — Informações do curso
 
@@ -488,6 +509,50 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 - Comportamento: lê as views da seção 3.
 - Saída: média de satisfação por encontro separada em teoria e prática, acerto por quiz e por item, participação por aluno; exporta CSV de perguntas, mensagens, respostas e da lista de e-mails com `comunicacao_professor` vigente = true. Em atividades anônimas o CSV traz um hash da inscrição no lugar do nome.
 
+### Plataforma de apoio — professor
+
+### F22 — Gerenciar alunos
+
+- Entrada (UI): `/admin/alunos`: tabela com Nome, ID, Turma, Status, Progresso, Último acesso e Ações; busca por nome ou ID; filtros por turma e status.
+- Comportamento: criar (nome, ID, turma e senha inicial opcional), editar nome e ID, redefinir senha, enviar mensagem, bloquear, desbloquear e remover. Bloquear, desbloquear e remover pedem confirmação. Bloquear corta o acesso na hora; remover apaga a conta e tudo o que o aluno enviou.
+- Saída: perfil do aluno em `/admin/alunos/:id` com dados, progresso, respostas, dúvidas, feedbacks, conteúdos acessados e a conversa privada.
+
+### F23 — Turmas
+
+- `/admin/turmas`: criar e editar turma (ID, curso ou disciplina, instituição, cidade, datas, modalidade, vagas, status). O curso é reaproveitado pelo nome ou criado na hora. Conteúdos, atividades e avisos são publicados por turma.
+
+### F24 — Conteúdos e aulas extras
+
+- `/admin/conteudos`: criar, editar, publicar, despublicar, agendar e excluir. Campos: tipo, turma (uma ou todas), título, descrição, texto em Markdown, link de vídeo, link externo, capa e arquivo. Publicar gera notificação para os alunos da turma.
+
+### F25 — Questões
+
+- `/admin/questoes`: enunciado, alternativas, alternativa correta, explicação, dificuldade, categoria e conteúdo relacionado. Só publica com ao menos duas alternativas e gabarito marcado. O aluno vê a correção e a explicação logo depois de responder.
+
+### F26 — Atividades e lições
+
+- `/admin/atividades`: lição (perguntas abertas ou de escolha, sem correção automática) ou quiz (com gabarito), com descrição, instruções, prazo opcional, arquivo e turma. Rascunho → publicada → encerrada. O professor vê as respostas por aluno. Com respostas enviadas, os itens ficam travados.
+
+### F27 — Dúvidas, mensagens, feedbacks e avisos
+
+- `/admin/duvidas`: responder, editar a resposta, arquivar e reabrir; responder marca como respondida e notifica o aluno.
+- `/admin/conversas`: conversas privadas por aluno, com contador de não lidas.
+- `/admin/feedbacks`: lista com filtro lido/não lido.
+- `/admin/avisos`: publicar para todos os alunos ou para uma turma; excluir.
+
+### F28 — Painel do professor
+
+- `/admin`: total de alunos, ativos, bloqueados e novos cadastros (7 dias); aulas, atividades, questões e materiais; perguntas pendentes, feedbacks não lidos, atividades enviadas e mensagens não lidas; atividade recente dos alunos; contatos do site não lidos. Todos os números vêm do banco.
+
+### Plataforma de apoio — aluno
+
+### F29 — Área do aluno
+
+- `/aluno`: progresso (atividades realizadas, questões respondidas, conteúdos acessados, desempenho), conteúdos recentes, atividades, dúvidas e avisos.
+- `/aluno/conteudos` e `/aluno/conteudos/:id`: lista com busca e filtro; a página do conteúdo registra o acesso.
+- `/aluno/atividades` e `/aluno/questoes`: situação de cada uma, filtro e resposta na própria página.
+- `/aluno/duvidas`, `/aluno/mensagens`, `/aluno/feedback`, `/aluno/avisos`: canal com o professor. Notificações no sino do cabeçalho, em tempo real.
+
 ## 5. Telas e componentes
 
 ### Landing `/`
@@ -520,8 +585,13 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Entrar `/aluno/entrar`
 
-- Layout: cartão central em 3 etapas: (1) IDs, (2) cadastro — só no primeiro acesso, (3) código OTP. Indicador de etapa no topo.
-- Componentes shadcn: `Card`, `Form`, `Input`, `Switch`, `Checkbox`, `InputOTP`, `Button`, `Alert`, `Progress`.
+- Layout: cartão central com as abas Entrar (ID do aluno, ID da turma, senha) e Criar conta (nome, IDs, senha, confirmação, aceite do termo).
+- Componentes shadcn: `Card`, `Tabs`, `Input`, `Checkbox`, `Button`.
+
+### Área do aluno `/aluno/*`
+
+- Layout: barra lateral (menu em `Sheet` no celular) com Início, Conteúdos, Atividades, Questões, Minhas dúvidas, Mensagens, Feedback, Avisos, Aulas presenciais e Meus dados; sino de notificações no cabeçalho.
+- Toda lista tem carregamento (`Skeleton`), erro com "Tentar de novo" e estado vazio com ícone e texto.
 
 ### Turma do aluno `/aluno/turmas/:codigo`
 
@@ -540,8 +610,9 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Admin — estrutura geral `/admin/*`
 
-- Layout: `Sidebar` com Painel, Landing, Mensagens de contato, Cursos, Turmas, Relatórios; área principal com breadcrumb.
-- Componentes shadcn: `Sidebar`, `Breadcrumb`, `DropdownMenu`, `Button`.
+- Layout: barra lateral em três grupos: Geral (Painel, Alunos, Turmas), Ensino (Conteúdos, Atividades, Questões) e Comunicação (Dúvidas, Mensagens, Feedbacks, Avisos, Contatos do site). No celular o menu abre em `Sheet`.
+- Formulários em `Dialog`; ações que mudam acesso ou apagam dados em `AlertDialog` de confirmação; retorno em `Toast`.
+- Componentes shadcn: `Sheet`, `Table`, `DropdownMenu`, `Dialog`, `AlertDialog`, `Select`, `Switch`, `Badge`, `Button`.
 
 ### Admin — Turma `/admin/turmas/:id`
 
@@ -577,17 +648,14 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Aluno faz o primeiro acesso
 
-1. Aluno abre `/aluno/entrar` e informa ID do aluno + ID da turma.
-2. Sistema valida os IDs; como não há inscrição, mostra o cadastro.
-3. Aluno informa nome e e-mail, aceita o termo e escolhe se quer receber comunicações.
-4. Sistema envia código de 6 dígitos; aluno digita.
-5. Sistema cria perfil, inscrição e registros de consentimento, e abre a página da turma.
+1. O professor cadastra o aluno em `/admin/alunos` (com ou sem senha inicial) e passa o ID do aluno e o ID da turma.
+2. Sem senha inicial: o aluno abre `/aluno/entrar`, aba Criar conta, informa nome, IDs e senha, e aceita o termo.
+3. Sistema cria a conta e abre o painel do aluno.
 
 ### Aluno volta em outro dia
 
-1. Aluno informa os mesmos IDs.
-2. Sistema envia código ao e-mail cadastrado e mostra o e-mail mascarado.
-3. Aluno digita o código e cai na página da turma (sessão vale 30 dias no mesmo aparelho).
+1. Aluno informa ID do aluno, ID da turma e senha.
+2. Sistema confere e abre o painel. Se esqueceu a senha, o professor redefine em `/admin/alunos`.
 
 ### Aula ao vivo
 
@@ -609,11 +677,10 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### Acesso
 
-- IDs não encontrados, ID `ativo = false` ou turma não 'ativa' → sempre a mesma mensagem genérica "Não encontramos essa combinação. Confira com o professor." (não revelar qual campo falhou).
-- Mais de 5 tentativas de IDs inválidos por IP em 15 min → bloquear por 15 min.
-- Código OTP errado ou expirado (validade 10 min) → erro no `InputOTP` + botão "Reenviar código" liberado após 60 s.
-- E-mail já usado por outro perfil em outra turma → reaproveitar o perfil (mesma pessoa em várias turmas); nome existente é mantido.
-- ID já inscrito tentando novo cadastro com outro e-mail → seguir o fluxo de login recorrente; troca de e-mail só pelo admin.
+- ID, turma ou senha que não batem → sempre a mesma mensagem genérica "ID, turma ou senha incorretos." (não revelar qual campo falhou). Conta bloqueada só é informada depois da senha certa.
+- Mais de 5 tentativas inválidas por IP em 15 min → bloquear por 15 min.
+- Criar conta com ID que já tem conta → "Já existe uma conta para este ID. Use a aba Entrar.". ID fora da lista do professor → mensagem genérica.
+- Senha fraca (menos de 8 caracteres ou sem letras e números) → recusada na tela e de novo no servidor.
 - Turma passa para 'encerrada' → aluno ainda entra e vê calendário, materiais e resultados em modo leitura; não há sessão ao vivo.
 - Aluno removido da lista (`ativo = false`) com sessão aberta → próxima chamada ao banco falha por RLS e o app faz logout.
 
@@ -668,7 +735,7 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ## 8. Fora de escopo (nesta fase)
 
-- Envio de e-mails em massa ou newsletters pelo sistema (fase 1 só exporta a lista de quem consentiu). Único e-mail transacional: o código OTP.
+- Envio de e-mails em massa ou newsletters pelo sistema (fase 1 só exporta a lista de quem consentiu). O sistema não envia e-mail transacional: a entrada do aluno é por senha e a recuperação é feita pelo professor.
 - Vídeo, áudio ou transmissão da aula dentro do app (a aula acontece presencialmente ou em ferramenta externa; `encontro.local` guarda o link).
 - Notas, frequência e diário de classe oficiais da instituição.
 - Gamificação (pontos, ranking, medalhas) e placar público de quiz.
@@ -721,6 +788,8 @@ Tokens derivados (Assumido — o guia não define; deduzidos da paleta para comp
 - Eyebrow (rótulo acima de títulos e seções): Ubuntu 700, 10–11 px, maiúsculas, letter-spacing 0.14–0.16em.
 - Escala usada no guia: 10, 11, 12, 13, 16, 18, 19, 28 px.
 - Títulos de página seguem a amostra tipográfica do guia: H1 56 px, H2 36 px, H3 22 px no desktop, reduzindo no celular (H1 36 px, H2 28 px). A landing usa escala própria, proporcional à largura da tela (seção 5, Landing).
+
+**Plataforma (área do aluno e painel do professor) — decisão do dono, 07/10/2026.** Fundo branco (#ffffff) no lugar do Papel, para o preto destacar; o Papel vira tom de apoio (faixas, hover, cabeçalho de tabela). Texto corrido em Inter (fonte limpa). A fonte de código do guia (Ubuntu Mono 700) fica só nos títulos e no que é importante: números, IDs e datas (utilitário `destaque`). Cores, bordas de 2 px, raio de 2 px e regras de contraste continuam as do guia. A landing não muda. Implementação: classe `.plataforma` em `src/index.css`.
 
 ### Forma e espaçamento
 
