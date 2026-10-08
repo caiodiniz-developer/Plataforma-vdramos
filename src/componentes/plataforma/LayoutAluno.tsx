@@ -39,7 +39,8 @@ import {
 import { formatarDataHora } from '@/dominio/tempo'
 import { useConsulta } from '@/hooks/useConsulta'
 import { cn } from '@/lib/utils'
-import { Carregado, Vazio } from './Blocos'
+import { iniciais } from '@/dominio/busca'
+import { Carregado, FaixaDeCores, Vazio } from './Blocos'
 
 const CHAVE_DA_TURMA = 'vr:turma-atual'
 
@@ -54,42 +55,63 @@ export function useTurmaAtual(): TurmaDoAluno {
 }
 
 type Item = { rotulo: string; para: string; icone: LucideIcon; fim?: boolean }
+type Grupo = { titulo: string; itens: Item[] }
 
-const ITENS: Item[] = [
-  { rotulo: 'Início', para: '/aluno', icone: HouseIcon, fim: true },
-  { rotulo: 'Conteúdos', para: '/aluno/conteudos', icone: BookOpenIcon },
-  { rotulo: 'Atividades', para: '/aluno/atividades', icone: ClipboardListIcon },
-  { rotulo: 'Questões', para: '/aluno/questoes', icone: ListChecksIcon },
-  { rotulo: 'Minhas dúvidas', para: '/aluno/duvidas', icone: CircleHelpIcon },
-  { rotulo: 'Mensagens', para: '/aluno/mensagens', icone: MessageSquareIcon },
-  { rotulo: 'Feedback', para: '/aluno/feedback', icone: MessageSquareHeartIcon },
-  { rotulo: 'Avisos', para: '/aluno/avisos', icone: MegaphoneIcon },
-]
-
-function Navegacao({ turma, aoNavegar }: { turma: TurmaDoAluno; aoNavegar?: () => void }) {
-  const itens: Item[] = [
-    ...ITENS,
-    { rotulo: 'Aulas presenciais', para: `/aluno/turmas/${turma.codigo}`, icone: CalendarDaysIcon },
-    { rotulo: 'Meus dados', para: '/aluno/meus-dados', icone: ShieldIcon },
+function gruposDe(turma: TurmaDoAluno): Grupo[] {
+  return [
+    {
+      titulo: 'Estudo',
+      itens: [
+        { rotulo: 'Início', para: '/aluno', icone: HouseIcon, fim: true },
+        { rotulo: 'Conteúdos', para: '/aluno/conteudos', icone: BookOpenIcon },
+        { rotulo: 'Atividades', para: '/aluno/atividades', icone: ClipboardListIcon },
+        { rotulo: 'Questões', para: '/aluno/questoes', icone: ListChecksIcon },
+      ],
+    },
+    {
+      titulo: 'Professor',
+      itens: [
+        { rotulo: 'Minhas dúvidas', para: '/aluno/duvidas', icone: CircleHelpIcon },
+        { rotulo: 'Mensagens', para: '/aluno/mensagens', icone: MessageSquareIcon },
+        { rotulo: 'Feedback', para: '/aluno/feedback', icone: MessageSquareHeartIcon },
+        { rotulo: 'Avisos', para: '/aluno/avisos', icone: MegaphoneIcon },
+      ],
+    },
+    {
+      titulo: 'Turma',
+      itens: [
+        { rotulo: 'Aulas presenciais', para: `/aluno/turmas/${turma.codigo}`, icone: CalendarDaysIcon },
+        { rotulo: 'Meus dados', para: '/aluno/meus-dados', icone: ShieldIcon },
+      ],
+    },
   ]
+}
+
+/** Menu da área do aluno, sobre o fundo Tinta da barra lateral. */
+function Navegacao({ turma, aoNavegar }: { turma: TurmaDoAluno; aoNavegar?: () => void }) {
   return (
-    <nav aria-label="Área do aluno" className="flex flex-col gap-1">
-      {itens.map((item) => (
-        <NavLink
-          key={item.para}
-          to={item.para}
-          end={item.fim}
-          onClick={aoNavegar}
-          className={({ isActive }) =>
-            cn(
-              'flex min-h-11 items-center gap-3 border-2 border-transparent px-3 text-sm font-semibold transition-colors',
-              isActive ? 'border-foreground bg-secondary text-secondary-foreground' : 'hover:bg-accent',
-            )
-          }
-        >
-          <item.icone aria-hidden="true" className="size-4 shrink-0" />
-          {item.rotulo}
-        </NavLink>
+    <nav aria-label="Área do aluno" className="flex flex-col gap-5">
+      {gruposDe(turma).map((grupo) => (
+        <div key={grupo.titulo} className="flex flex-col gap-1">
+          <p className="eyebrow px-3 pb-1 text-[10px] text-papel/70">{grupo.titulo}</p>
+          {grupo.itens.map((item) => (
+            <NavLink
+              key={item.para}
+              to={item.para}
+              end={item.fim}
+              onClick={aoNavegar}
+              className={({ isActive }) =>
+                cn(
+                  'group flex min-h-10 items-center gap-3 border-l-4 px-3 text-sm font-semibold transition-colors',
+                  isActive ? 'border-primary bg-papel text-tinta' : 'border-transparent text-papel hover:border-papel/40 hover:bg-papel/10',
+                )
+              }
+            >
+              <item.icone aria-hidden="true" className="size-4 shrink-0" />
+              {item.rotulo}
+            </NavLink>
+          ))}
+        </div>
       ))}
     </nav>
   )
@@ -214,7 +236,7 @@ export function LayoutAluno() {
 
           const seletor = turmas.length > 1 && (
             <Select value={turma.codigo} onValueChange={trocarTurma}>
-              <SelectTrigger size="sm" aria-label="Trocar de turma" className="w-full">
+              <SelectTrigger size="sm" aria-label="Trocar de turma" className="w-full border-papel/60 bg-tinta text-papel [&_svg]:text-papel">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -228,34 +250,43 @@ export function LayoutAluno() {
           )
 
           const identidade = (
-            <div className="flex flex-col gap-1 border-2 bg-muted px-3 py-3">
-              <p className="eyebrow text-muted-foreground">Turma</p>
-              <p className="destaque text-base">{turma.codigo}</p>
-              <p className="text-xs text-muted-foreground">{turma.nome_curso}</p>
+            <div className="flex flex-col border-2 border-papel/30">
+              <FaixaDeCores />
+              <div className="flex flex-col gap-1 px-3 py-3">
+                <p className="eyebrow text-[10px] text-papel/70">Turma</p>
+                <p className="destaque text-lg text-papel">{turma.codigo}</p>
+                <p className="text-xs text-papel/80">{turma.nome_curso}</p>
+              </div>
             </div>
+          )
+
+          const sair = (
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-papel/60 text-papel hover:border-papel hover:bg-papel hover:text-tinta"
+              onClick={() => void encerrar()}
+            >
+              <LogOutIcon aria-hidden="true" />
+              Sair
+            </Button>
           )
 
           return (
             <ContextoDaTurma.Provider value={turma}>
               <div className="flex min-h-svh flex-col md:flex-row">
-                <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col gap-6 overflow-y-auto border-r-2 px-4 py-6 md:flex">
-                  <Link to="/aluno" className="px-3 font-mono text-lg font-bold tracking-[-0.02em]">
+                <aside className="sticky top-0 hidden h-svh w-[272px] shrink-0 flex-col gap-6 overflow-y-auto bg-tinta px-4 py-6 text-papel md:flex">
+                  <Link to="/aluno" className="px-3 font-mono text-xl font-bold tracking-[-0.02em] text-papel">
                     Vitor Ramos
                   </Link>
                   {identidade}
                   {seletor}
                   <Navegacao turma={turma} />
-                  <div className="mt-auto flex flex-col gap-2 px-1">
-                    {perfil && <p className="truncate text-sm font-semibold">{perfil.nome}</p>}
-                    <Button size="sm" variant="outline" onClick={() => void encerrar()}>
-                      <LogOutIcon aria-hidden="true" />
-                      Sair
-                    </Button>
-                  </div>
+                  <div className="mt-auto flex flex-col gap-3 border-t-2 border-papel/20 pt-4">{sair}</div>
                 </aside>
 
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b-2 bg-background px-4 py-3 md:justify-end md:px-10">
+                  <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b-2 bg-background px-4 py-3 md:px-10">
                     <div className="flex items-center gap-3 md:hidden">
                       <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
                         <SheetTrigger asChild>
@@ -263,28 +294,40 @@ export function LayoutAluno() {
                             <MenuIcon />
                           </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="plataforma w-[290px] overflow-y-auto border-r-2">
+                        <SheetContent
+                          side="left"
+                          className="w-[290px] overflow-y-auto border-r-0 bg-tinta text-papel [&>button]:text-papel"
+                        >
                           <SheetHeader>
-                            <SheetTitle className="font-mono font-bold">Área do aluno</SheetTitle>
+                            <SheetTitle className="font-mono font-bold text-papel">Área do aluno</SheetTitle>
                             <SheetDescription className="sr-only">Navegação da área do aluno</SheetDescription>
                           </SheetHeader>
                           <div className="flex flex-col gap-5 px-4 pb-6">
                             {identidade}
                             {seletor}
                             <Navegacao turma={turma} aoNavegar={() => setMenuAberto(false)} />
-                            <Button size="sm" variant="outline" onClick={() => void encerrar()}>
-                              <LogOutIcon aria-hidden="true" />
-                              Sair
-                            </Button>
+                            {sair}
                           </div>
                         </SheetContent>
                       </Sheet>
                       <span className="destaque text-base">{turma.codigo}</span>
                     </div>
-                    {perfil && <Notificacoes perfilId={perfil.id} />}
+                    <p className="eyebrow hidden text-muted-foreground md:block">Plataforma de apoio às aulas</p>
+                    {perfil && (
+                      <div className="flex items-center gap-3">
+                        <Notificacoes perfilId={perfil.id} />
+                        <span className="hidden text-right text-sm leading-tight sm:block">
+                          <span className="block font-semibold">{perfil.nome}</span>
+                          <span className="font-mono text-[11px] text-muted-foreground">{turma.codigo}</span>
+                        </span>
+                        <span aria-hidden="true" className="destaque flex size-11 items-center justify-center bg-tinta text-sm text-papel">
+                          {iniciais(perfil.nome)}
+                        </span>
+                      </div>
+                    )}
                   </header>
 
-                  <main className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-8 px-4 py-8 md:px-10 md:py-10">
+                  <main className="surgir mx-auto flex w-full max-w-[1080px] flex-1 flex-col gap-8 px-4 py-8 md:px-10 md:py-10">
                     <Outlet />
                   </main>
                 </div>
