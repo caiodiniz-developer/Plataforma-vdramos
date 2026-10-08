@@ -1,0 +1,21 @@
+# Alternativa à Vercel: o mesmo frontend como site estático no Render.
+# O backend é o Supabase; não há servidor próprio para hospedar.
+services:
+  - type: web
+    name: plataforma-vitor-ramos
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      # Preenchidas no painel do Render (são públicas por design; a proteção é a RLS).
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+    routes:
+      # App de página única: toda rota cai no index.html.
+      - type: rewrite
+        source: /*
+        destination: /index.html
