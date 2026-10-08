@@ -1,4 +1,4 @@
-import { EyeIcon, EyeOffIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react'
+import { BookOpenIcon, CircleHelpIcon, EyeIcon, EyeOffIcon, ListChecksIcon, Loader2Icon, TriangleAlertIcon, type LucideIcon } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -8,9 +8,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FaixaDeCores, Selo, type Cor } from '@/componentes/plataforma/Blocos'
 import { useSessao } from '@/contextos/Sessao'
 import { cadastrar, entrar } from '@/dados/acesso'
 import { SENHA_MINIMA, validarCadastro, type CadastroDeAluno, type ErrosDeCadastro } from '@/dominio/senha'
+
+const DESTAQUES: { titulo: string; texto: string; icone: LucideIcon; cor: Cor }[] = [
+  { titulo: 'Conteúdos e aulas extras', texto: 'O material que o professor publica para a sua turma.', icone: BookOpenIcon, cor: 'laranja' },
+  { titulo: 'Questões e atividades', texto: 'Pratique e veja a correção na hora.', icone: ListChecksIcon, cor: 'azul' },
+  { titulo: 'Dúvidas direto com o professor', texto: 'Só você e ele veem a conversa.', icone: CircleHelpIcon, cor: 'verde' },
+]
 
 function Enviar({ ocupado, children }: { ocupado: boolean; children: string }) {
   return (
@@ -171,17 +178,34 @@ export default function Entrar() {
   })
 
   return (
-    <div className="plataforma flex min-h-screen flex-col">
-      <header className="border-b-2">
-        <div className="mx-auto flex max-w-[1080px] items-center justify-between px-4 py-3 md:px-10">
-          <Link to="/" className="font-mono text-lg font-bold tracking-[-0.02em]">
+    <div className="plataforma flex min-h-screen flex-col lg:flex-row">
+      <aside className="flex flex-col bg-tinta text-papel lg:sticky lg:top-0 lg:h-screen lg:w-[46%] lg:max-w-[640px]">
+        <div className="flex flex-1 flex-col gap-8 px-5 py-6 md:px-12 md:py-10">
+          <Link to="/" className="font-mono text-xl font-bold tracking-[-0.02em] text-papel">
             Vitor Ramos
           </Link>
-          <span className="eyebrow text-muted-foreground">Área do aluno</span>
+          <div className="flex flex-col gap-4 lg:my-auto">
+            <p className="eyebrow text-papel/80">Plataforma de apoio às aulas</p>
+            <p className="font-mono text-[30px] leading-[1.05] font-bold tracking-[-0.02em] text-papel md:text-[52px]">
+              O que você viu em sala continua aqui.
+            </p>
+            <ul className="mt-4 hidden flex-col gap-4 lg:flex">
+              {DESTAQUES.map((d) => (
+                <li key={d.titulo} className="flex items-center gap-4">
+                  <Selo icone={d.icone} cor={d.cor} />
+                  <span className="flex flex-col">
+                    <span className="font-semibold text-papel">{d.titulo}</span>
+                    <span className="text-sm text-papel/80">{d.texto}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </header>
+        <FaixaDeCores />
+      </aside>
 
-      <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col justify-center px-4 py-12">
+      <main className="surgir mx-auto flex w-full max-w-[520px] flex-1 flex-col justify-center px-4 py-10 md:px-8">
         <Card>
           <CardHeader>
             <CardTitle>
