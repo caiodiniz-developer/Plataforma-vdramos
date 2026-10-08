@@ -11,6 +11,7 @@ import { CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Bl
 import { Conversa } from '@/componentes/plataforma/Conversa'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
 import {
+  assinarMudancas,
   enviarFeedback,
   enviarMensagemAoProfessor,
   listarAvisos,
@@ -30,6 +31,13 @@ export function Mensagens() {
   const turma = useTurmaAtual()
   const consulta = useConsulta(() => minhasMensagens(turma.inscricao_id), [turma.inscricao_id])
   const total = consulta.dados?.length ?? 0
+  const { recarregar } = consulta
+
+  // A resposta do professor aparece na conversa aberta, sem recarregar a página.
+  useEffect(
+    () => assinarMudancas('mensagem_privada', recarregar, `inscricao_id=eq.${turma.inscricao_id}`),
+    [turma.inscricao_id, recarregar],
+  )
 
   // Abrir a conversa marca como lidas as respostas do professor.
   useEffect(() => {

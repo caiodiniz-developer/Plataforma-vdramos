@@ -1,5 +1,5 @@
 import { CircleHelpIcon, Loader2Icon, PaperclipIcon, PlusIcon } from 'lucide-react'
-import { useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +14,7 @@ import { CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Bl
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
 import {
   ANEXO_MAXIMO_MB,
+  assinarMudancas,
   enviarDuvida,
   listarConteudos,
   minhasDuvidas,
@@ -49,6 +50,13 @@ export default function Duvidas() {
   const [parametros, setParametros] = useSearchParams()
   const conteudoInicial = parametros.get('conteudo')
   const consulta = useConsulta(() => carregar(turma.id), [turma.id])
+  const { recarregar } = consulta
+
+  // A resposta do professor aparece assim que ele envia.
+  useEffect(
+    () => assinarMudancas('duvida', recarregar, `inscricao_id=eq.${turma.inscricao_id}`),
+    [turma.inscricao_id, recarregar],
+  )
 
   const vazia: NovaDuvida = { titulo: '', pergunta: '', categoria: '', conteudoId: conteudoInicial, anexo: null }
   const [aberto, setAberto] = useState(conteudoInicial !== null)
