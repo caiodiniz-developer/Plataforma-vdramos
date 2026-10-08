@@ -245,7 +245,10 @@ describe('relatórios', () => {
        values ($1, 'comunicacao_professor', true, '2026-10-v1', 'cadastro', now() - interval '1 day')`,
       [ana],
     )
-    expect((await emails()).rows).toEqual([{ email: 'ana@exemplo.com' }])
+    // Consentiu, mas sem e-mail de contato não há para onde enviar.
+    expect((await emails()).rows).toHaveLength(0)
+    await db.query("update public.perfil set email_contato = 'ana.contato@exemplo.com' where id = $1", [ana])
+    expect((await emails()).rows).toEqual([{ email: 'ana.contato@exemplo.com' }])
 
     await db.query(
       `insert into public.consentimento (perfil_id, finalidade, concedido, versao_termo, origem)
