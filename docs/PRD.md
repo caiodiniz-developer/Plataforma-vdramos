@@ -560,7 +560,8 @@ Migration `20261009090000_ajustes_do_professor.sql`; funções `notificar-respos
 
 ### F30 — Aluno em mais de uma turma
 
-- Professor: em Alunos, a ação "Adicionar a outra turma" coloca o aluno em mais uma turma (função `matricular_em_turma`). Com conta, é a mesma conta nas duas: mesmo ID, mesma senha.
+- O perfil do aluno no painel lista todas as turmas de que ele participa.
+- Professor: no cadastro ("Novo aluno"), além da turma principal dá para marcar outras turmas em "Também nestas turmas". Para quem já existe, a ação "Adicionar a outra turma" coloca o aluno em mais uma turma (função `matricular_em_turma`). Com conta, é a mesma conta nas duas: mesmo ID, mesma senha.
 - Aluno: em `/aluno/minhas-turmas` ele vê as turmas de que participa, troca a turma em uso, entra em outra com o ID da turma (`entrar_na_turma`; só turma ativa, e leva a própria matrícula) e sai de uma (`sair_da_turma`; nunca da última, e o que enviou naquela turma é apagado).
 - Casos: ID já usado por outra pessoa na turma de destino é recusado; aluno bloqueado não entra em turma nova.
 
