@@ -17,9 +17,9 @@ O controlador dos dados é **Vitor Ramos**, responsável pelo site vitorramos.co
 ## Quais dados são tratados
 
 - **Formulário de contato:** nome, e-mail, assunto e a mensagem enviada.
-- **Cadastro do aluno:** ID de aluno informado pela instituição, nome e e-mail.
-- **Uso da sala de aula:** perguntas, votos, mensagens e respostas a quizzes, enquetes e pesquisas de satisfação, além da data do último acesso.
-- **Segurança:** um código derivado do endereço IP, guardado por até 24 horas, para limitar tentativas de acesso e de envio. O endereço IP em si não é armazenado.
+- **Cadastro do aluno:** ID de aluno informado pela instituição e nome. O e-mail é opcional: você só informa se quiser, e ele só é usado para as comunicações que autorizar.
+- **Uso da plataforma:** perguntas, votos, mensagens, dúvidas, feedbacks, respostas a questões, atividades, quizzes, enquetes e pesquisas de satisfação, os arquivos que você anexar às atividades, os conteúdos que abriu e a data do último acesso.
+- **Segurança:** no formulário de contato, um código derivado do endereço IP, guardado por até 24 horas, para limitar o número de envios. O endereço IP em si não é armazenado.
 
 O site não usa cookies de publicidade nem ferramentas de rastreamento de terceiros.
 
@@ -31,9 +31,10 @@ O site não usa cookies de publicidade nem ferramentas de rastreamento de tercei
 | Dar acesso à turma e conduzir as atividades do curso | Execução do serviço educacional (art. 7º, V) |
 | Analisar resultados de quizzes e pesquisas para melhorar as aulas | Consentimento — "uso dos dados para fins pedagógicos" (art. 7º, I) |
 | Enviar comunicações do professor por e-mail | Consentimento específico e opcional (art. 7º, I) |
-| Limitar tentativas de acesso e prevenir abuso | Legítimo interesse (art. 7º, IX) |
+| Enviar ao professor, por e-mail, as respostas e os arquivos das atividades | Execução do serviço educacional (art. 7º, V) |
+| Limitar envios do formulário de contato e prevenir abuso | Legítimo interesse (art. 7º, IX) |
 
-O consentimento para comunicações nunca vem marcado e pode ser retirado a qualquer momento na página "Meus dados", com efeito imediato.
+O consentimento para comunicações nunca vem marcado: no primeiro acesso a plataforma pergunta se você quer receber, e responder "não" não muda nada no seu acesso. Ele pode ser retirado a qualquer momento na página "Meus dados", com efeito imediato. O envio de e-mails é feito por um serviço de entrega contratado para isso, que recebe apenas o endereço de destino e o conteúdo da mensagem.
 
 ## Perguntas anônimas e pesquisas anônimas
 
