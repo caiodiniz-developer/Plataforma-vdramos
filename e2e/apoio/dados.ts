@@ -38,6 +38,10 @@ export type Cenario = {
   statusDaSessao: 'agendada' | 'aberta' | 'encerrada'
   versaoDoTermo: string
   querComunicacao: boolean
+  /** O aluno já respondeu à pergunta sobre comunicações (sim ou não). */
+  respondeuComunicacao: boolean
+  /** E-mail de contato informado pelo aluno. */
+  emailDeContato: string | null
   perguntas: Record<string, unknown>[]
   mensagens: Record<string, unknown>[]
   atividades: Record<string, unknown>[]
@@ -116,6 +120,8 @@ export function cenarioPadrao(mudancas: Partial<Cenario> = {}): Cenario {
     statusDaSessao: 'aberta',
     versaoDoTermo: '2026-10-v1',
     querComunicacao: false,
+    respondeuComunicacao: true,
+    emailDeContato: 'ana@contato.com',
     respondida: false,
     perguntas: [
       { id: 'p1', texto: 'Qual a diferença entre PROCV e PROCX?', destino: 'turma', anonima: false, autor_nome: 'Bruno Lima', status: 'aberta', resposta: null, votos: 1, created_at: '2026-10-14T22:00:00Z' },
@@ -147,7 +153,7 @@ export function cenarioPadrao(mudancas: Partial<Cenario> = {}): Cenario {
         ...ALUNA,
       },
     ],
-    avisos: [{ id: 'av1', turma_id: null, titulo: 'Prova na quarta', texto: 'Tragam o notebook carregado.', created_at: '2026-10-15T00:00:00Z' }],
+    avisos: [{ id: 'av1', lote_id: 'lote-1', turma_id: null, titulo: 'Prova na quarta', texto: 'Tragam o notebook carregado. Roteiro em https://exemplo.com/roteiro.', created_at: '2026-10-15T00:00:00Z' }],
     alunos: [
       alunoDoProfessor({}),
       alunoDoProfessor({
@@ -164,6 +170,42 @@ export function cenarioPadrao(mudancas: Partial<Cenario> = {}): Cenario {
         questoes_corretas: 0,
         duvidas: 0,
       }),
+    ],
+    ...mudancas,
+  }
+}
+
+/** Questão no formato que o painel do professor lê (com itens e opções). */
+export function questaoDoProfessor(mudancas: Record<string, unknown> = {}) {
+  return {
+    id: 'dddddddd-0000-4000-8000-000000000010',
+    turma_id: TURMA_ID,
+    tipo: 'questao',
+    titulo: 'Referência absoluta',
+    descricao: null,
+    instrucoes_md: null,
+    prazo_em: null,
+    dificuldade: 'facil',
+    categoria: 'Excel',
+    conteudo_id: null,
+    arquivo_path: null,
+    aceita_arquivo: false,
+    status: 'rascunho',
+    publicada_em: null,
+    created_at: '2026-10-14T22:00:00Z',
+    itens: [
+      {
+        ordem: 1,
+        enunciado: 'Qual símbolo fixa uma referência?',
+        tipo_resposta: 'escolha_unica',
+        obrigatorio: true,
+        explicacao: 'O cifrão.',
+        opcoes: [
+          { ordem: 1, texto: '$', correta: true },
+          { ordem: 2, texto: '#', correta: false },
+        ],
+        respostas: [],
+      },
     ],
     ...mudancas,
   }
@@ -218,7 +260,7 @@ function consentimentos(c: Cenario) {
   const base = { versao_termo: c.versaoDoTermo, origem: 'cadastro', created_at: '2026-10-14T22:00:00Z' }
   return [
     { ...base, finalidade: 'uso_dados_pedagogicos', concedido: true },
-    { ...base, finalidade: 'comunicacao_professor', concedido: c.querComunicacao },
+    ...(c.respondeuComunicacao ? [{ ...base, finalidade: 'comunicacao_professor', concedido: c.querComunicacao }] : []),
   ]
 }
 
@@ -250,7 +292,7 @@ function atividadeParaAluno(c: Cenario) {
 
 /** Respostas da API para um cenário. O cenário pode ser alterado durante o teste. */
 export function respostasDe(c: Cenario): Respostas {
-  const perfil = () => [{ id: c.usuario.id, papel: c.usuario.papel, nome: c.usuario.nome, email: c.usuario.email, created_at: '2026-10-14T22:00:00Z' }]
+  const perfil = () => [{ id: c.usuario.id, papel: c.usuario.papel, nome: c.usuario.nome, email: c.usuario.email, email_contato: c.emailDeContato, created_at: '2026-10-14T22:00:00Z' }]
   const filtrado = (chamada: Chamada, coluna: string) => chamada.busca.get(coluna)?.replace(/^eq\./, '')
 
   return {
@@ -284,6 +326,7 @@ export function respostasDe(c: Cenario): Respostas {
         return chamada.metodo === 'HEAD' ? linhas.slice(0, 1) : linhas
       },
       conteudo_acesso: () => [],
+      atividade_entrega: () => [],
       duvida: (chamada) => (chamada.metodo === 'HEAD' ? c.duvidas.filter((d) => d.status === 'aberta') : c.duvidas),
       feedback: () => [],
       mensagem_privada: () => [],
@@ -333,12 +376,21 @@ export function respostasDe(c: Cenario): Respostas {
         duvidas_respondidas: 0,
       }),
       registrar_acesso: () => null,
+      definir_visibilidade: (chamada) => ({ alteradas: (chamada.corpo as { p_ids: string[] }).p_ids.length, puladas: [] }),
+      matricular_em_turma: () => 'novo',
+      entrar_na_turma: () => TURMA_ID,
+      sair_da_turma: () => null,
+      registrar_entrega: () => 'entrega-1',
       marcar_mensagens_lidas: () => null,
       responder_atividade: () => {
         c.respondida = true
         return null
       },
     },
-    funcoes: {},
+    funcoes: {
+      // Sem provedor de e-mail no teste: as funções respondem que não enviaram.
+      'notificar-resposta': () => ({ configurado: false, enviado: false }),
+      'enviar-aviso': () => ({ configurado: false, destinatarios: 1, enviados: 0 }),
+    },
   }
 }
