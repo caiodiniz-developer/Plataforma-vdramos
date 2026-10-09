@@ -114,6 +114,22 @@ describe('acesso-aluno · cadastrar', () => {
     ])
   })
 
+  it('o e-mail de contato é opcional: grava quando vem e recusa formato inválido', async () => {
+    const semEmail = await amb.chamar(cadastro)
+    expect(semEmail.status).toBe(201)
+    expect(amb.banco.linhas('perfil')[0].email_contato).toBeUndefined()
+
+    const invalido = await amb.chamar({ ...cadastro, matricula: 'ALUNO-0002', email: 'sem-arroba' })
+    expect(invalido.status).toBe(422)
+    expect(invalido.corpo.codigo).toBe('email')
+
+    const comEmail = await amb.chamar({ ...cadastro, matricula: 'ALUNO-0002', email: ' Bruno@Exemplo.com ' })
+    expect(comEmail.status).toBe(201)
+    expect(amb.banco.linhas('perfil')[1].email_contato).toBe('bruno@exemplo.com')
+    // O consentimento de comunicação não é dado aqui: fica para a tela seguinte.
+    expect(amb.banco.linhas('consentimento').every((c) => c.finalidade === 'uso_dados_pedagogicos')).toBe(true)
+  })
+
   it('depois do cadastro o aluno entra com a senha que escolheu', async () => {
     await amb.chamar(cadastro)
     expect((await entrar()).status).toBe(200)

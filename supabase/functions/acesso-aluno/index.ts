@@ -3,7 +3,9 @@
 //
 // Ações (campo `acao` do corpo):
 //   entrar     → { sessao: { access_token, refresh_token }, codigo_turma }
-//   cadastrar  → idem (a conta é criada e o aluno já sai logado)
+//   cadastrar  → idem (a conta é criada e o aluno já sai logado). Aceita um
+//                `email` opcional, de contato: só é usado para comunicações
+//                se o aluno consentir depois, na tela de consentimento.
 //
 // Só cria conta quem está na lista de IDs autorizados pelo professor. A senha
 // é verificada pelo Supabase Auth (hash bcrypt); esta função nunca a grava.
@@ -135,6 +137,10 @@ Deno.serve(async (req) => {
   if (nome.length < 3) return erro(req, 422, 'Informe seu nome completo.', 'validacao')
   const problema = problemaDaSenha(senha)
   if (problema) return erro(req, 422, problema, 'senha')
+  const emailDeContato = texto(corpo.email).toLowerCase()
+  if (emailDeContato !== '' && !/^[^@s]+@[^@s]+.[^@s]+$/.test(emailDeContato)) {
+    return erro(req, 422, 'Confira o e-mail informado.', 'email')
+  }
   // LGPD: sem aceite do termo, o cadastro não conclui.
   if (corpo.aceite_termo !== true) {
     return erro(req, 422, 'É preciso aceitar o termo de uso para continuar.', 'termo')
@@ -155,6 +161,10 @@ Deno.serve(async (req) => {
     versao_termo: VERSAO_TERMO,
     origem: 'cadastro',
   })
+  // O e-mail é opcional: se não gravar, a conta vale assim mesmo e o aluno
+  // informa de novo na tela de consentimento.
+  if (emailDeContato !== '') await admin.from('perfil').update({ email_contato: emailDeContato }).eq('id', conta.perfilId)
+
   const { data: login, error: erroLogin } = await entrarNoAuth(conta.email)
   if (erroConsentimento || erroLogin || !login.session) {
     // Não deixa uma conta pela metade: o aluno tenta de novo do zero.
