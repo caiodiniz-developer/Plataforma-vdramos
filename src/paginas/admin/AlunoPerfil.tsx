@@ -26,11 +26,14 @@ const FUSO = 'America/Sao_Paulo'
 const ROTULO_DUVIDA = { aberta: 'Aberta', respondida: 'Respondida', arquivada: 'Arquivada' } as const
 
 async function carregar(id: string) {
-  const aluno = (await listarAlunos()).find((a) => a.aluno_autorizado_id === id) ?? null
-  if (!aluno || !aluno.inscricao_id) return { aluno, perfil: null, mensagens: [] }
+  const todos = await listarAlunos()
+  const aluno = todos.find((a) => a.aluno_autorizado_id === id) ?? null
+  // A mesma pessoa pode estar em várias turmas: cada turma é um vínculo.
+  const vinculos = aluno ? todos.filter((a) => (aluno.perfil_id ? a.perfil_id === aluno.perfil_id : a.aluno_autorizado_id === id)) : []
+  if (!aluno || !aluno.inscricao_id) return { aluno, vinculos, perfil: null, mensagens: [] }
   const [perfil, mensagens] = await Promise.all([buscarPerfilDoAluno(aluno.inscricao_id), mensagensDaConversa(aluno.inscricao_id)])
   if (mensagens.some((m) => m.autor === 'aluno' && m.lida_em === null)) await marcarConversaLida(aluno.inscricao_id)
-  return { aluno, perfil, mensagens }
+  return { aluno, vinculos, perfil, mensagens }
 }
 
 function Linha({ children }: { children: React.ReactNode }) {
@@ -177,7 +180,7 @@ export default function AlunoPerfil() {
       </Button>
 
       <Carregado consulta={consulta} linhas={4}>
-        {({ aluno, perfil, mensagens }) =>
+        {({ aluno, vinculos, perfil, mensagens }) =>
           !aluno ? (
             <Vazio icone={UserXIcon} titulo="Aluno não encontrado" texto="Ele pode ter sido removido." />
           ) : (
@@ -185,6 +188,21 @@ export default function AlunoPerfil() {
               <CabecalhoDaPagina rotulo="Perfil do aluno" titulo={aluno.nome ?? 'Sem nome'}>
                 <Badge variant={VARIANTE_SITUACAO[aluno.situacao]}>{ROTULO_SITUACAO[aluno.situacao]}</Badge>
               </CabecalhoDaPagina>
+
+              {vinculos.length > 1 && (
+                <nav aria-label="Turmas deste aluno" className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="eyebrow text-muted-foreground">Participa de {vinculos.length} turmas</span>
+                  {vinculos.map((v) =>
+                    v.aluno_autorizado_id === aluno.aluno_autorizado_id ? (
+                      <Badge key={v.aluno_autorizado_id}>{v.turma_codigo}</Badge>
+                    ) : (
+                      <Badge key={v.aluno_autorizado_id} variant="outline" asChild>
+                        <Link to={`/admin/alunos/${v.aluno_autorizado_id}`}>{v.turma_codigo}</Link>
+                      </Badge>
+                    ),
+                  )}
+                </nav>
+              )}
 
               <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div>
