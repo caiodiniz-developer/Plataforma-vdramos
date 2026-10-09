@@ -30,7 +30,7 @@ const aceite: Consentimento = {
 }
 
 const dados: Dados = {
-  perfil: { id: 'p1', nome: 'Ana Souza', email: 'ana@empresa.com', created_at: '2026-10-14T22:00:00Z' },
+  perfil: { id: 'p1', nome: 'Ana Souza', email: 'ana@empresa.com', email_contato: null, created_at: '2026-10-14T22:00:00Z' },
   inscricoes: [
     {
       id: 'i1',

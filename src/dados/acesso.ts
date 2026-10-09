@@ -39,7 +39,7 @@ export async function entrar(acesso: IdsDeAcesso, senha: string): Promise<string
  */
 export async function cadastrar(
   acesso: IdsDeAcesso,
-  dados: { nome: string; senha: string; aceiteTermo: boolean },
+  dados: { nome: string; senha: string; aceiteTermo: boolean; email?: string },
 ): Promise<string> {
   return instalarSessao(
     await chamarFuncao<RespostaSessao>('acesso-aluno', {
@@ -48,6 +48,8 @@ export async function cadastrar(
       nome: dados.nome.trim(),
       senha: dados.senha,
       aceite_termo: dados.aceiteTermo,
+      // Opcional: só é usado para comunicações se o aluno consentir depois.
+      email: dados.email?.trim() || undefined,
     }),
   )
 }

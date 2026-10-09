@@ -9,7 +9,7 @@ export type InscricaoDoAluno = {
 }
 
 export type MeusDados = {
-  perfil: { id: string; nome: string; email: string; created_at: string }
+  perfil: { id: string; nome: string; email: string; email_contato: string | null; created_at: string }
   inscricoes: InscricaoDoAluno[]
   consentimentos: Consentimento[]
 }
@@ -24,7 +24,7 @@ async function idDoUsuario(): Promise<string> {
 export async function buscarMeusDados(): Promise<MeusDados> {
   const id = await idDoUsuario()
   const [perfil, inscricoes, consentimentos] = await Promise.all([
-    supabase().from('perfil').select('id, nome, email, created_at').eq('id', id).single(),
+    supabase().from('perfil').select('id, nome, email, email_contato, created_at').eq('id', id).single(),
     supabase()
       .from('inscricao')
       .select('id, ultimo_acesso_em, created_at, turma:turma_id (codigo, instituicao, cidade, status, curso:curso_id (nome))')
@@ -71,6 +71,26 @@ export async function registrarConsentimento(finalidade: Finalidade, concedido: 
     origem: 'area_aluno',
   })
   if (error) throw paraErroDeDados(error)
+}
+
+/** E-mail de contato do aluno (opcional). Vazio apaga o que estava gravado. */
+export async function salvarEmailDeContato(email: string): Promise<void> {
+  const valor = email.trim().toLowerCase()
+  const { error } = await supabase()
+    .from('perfil')
+    .update({ email_contato: valor === '' ? null : valor })
+    .eq('id', await idDoUsuario())
+  if (error) {
+    if (error.code === '23514') throw new ErroDeDados('Confira o e-mail informado.', 'email')
+    throw paraErroDeDados(error)
+  }
+}
+
+/** E-mail de contato já informado, para a tela de consentimento. */
+export async function buscarEmailDeContato(): Promise<string | null> {
+  const { data, error } = await supabase().from('perfil').select('email_contato').eq('id', await idDoUsuario()).single()
+  if (error) throw paraErroDeDados(error)
+  return (data.email_contato as string | null) ?? null
 }
 
 export async function atualizarNome(nome: string): Promise<void> {
