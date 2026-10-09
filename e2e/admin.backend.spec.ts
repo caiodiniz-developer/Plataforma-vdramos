@@ -10,6 +10,11 @@ async function semViolacoesDeAcessibilidade(page: Page) {
   ).toEqual([])
 }
 
+/** Nada passa da largura da tela (vale principalmente no celular). */
+async function cabeNaTela(page: Page) {
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
+}
+
 test.describe('painel do professor', () => {
   test('login com e-mail e senha leva ao painel com os números', async ({ page }) => {
     const cenario = cenarioPadrao({ usuario: PROFESSOR })
@@ -185,6 +190,7 @@ test.describe('painel do professor', () => {
     const primeira = page.getByRole('listitem').filter({ hasText: 'Referência absoluta' })
     await expect(primeira.getByText('Oculta').first()).toBeVisible()
     await semViolacoesDeAcessibilidade(page)
+    await cabeNaTela(page)
 
     await primeira.getByRole('switch', { name: 'Referência absoluta: visível para os alunos' }).click()
     await expect.poll(() => api.enviadas('rpc/definir_visibilidade').length).toBe(1)
@@ -235,6 +241,7 @@ test.describe('painel do professor', () => {
     await page.getByLabel('Aviso', { exact: true }).fill('Veja https://exemplo.com/material')
     await page.getByRole('checkbox', { name: 'Enviar também por e-mail' }).check()
     await semViolacoesDeAcessibilidade(page)
+    await cabeNaTela(page)
     await page.getByRole('button', { name: 'Publicar aviso' }).click()
 
     await expect.poll(() => api.enviadas('/rest/v1/aviso').length).toBe(1)
