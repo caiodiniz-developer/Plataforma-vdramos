@@ -10,6 +10,11 @@ async function semViolacoesDeAcessibilidade(page: Page) {
   ).toEqual([])
 }
 
+/** Nada passa da largura da tela (vale principalmente no celular). */
+async function cabeNaTela(page: Page) {
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
+}
+
 test.describe('entrada do aluno', () => {
   test('entra com ID do aluno, ID da turma e senha e chega ao painel', async ({ page }) => {
     const respostas = respostasDe(cenarioPadrao())
@@ -344,6 +349,7 @@ test.describe('ajustes do guia · aluno', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Quer receber comunicações do professor?' })).toBeVisible()
     await expect(page.getByRole('navigation', { name: 'Área do aluno' })).toHaveCount(0)
     await semViolacoesDeAcessibilidade(page)
+    await cabeNaTela(page)
 
     await page.getByRole('button', { name: 'Quero receber' }).click()
     await expect(page.getByRole('alert')).toContainText('Para receber, informe um e-mail.')
@@ -389,6 +395,7 @@ test.describe('ajustes do guia · aluno', () => {
     await expect(page.getByRole('heading', { level: 2, name: CODIGO })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Sair da turma' })).toBeDisabled()
     await semViolacoesDeAcessibilidade(page)
+    await cabeNaTela(page)
 
     await page.getByRole('button', { name: 'Entrar na turma' }).click()
     await expect(page.getByRole('alert')).toContainText('Informe o ID da turma.')
