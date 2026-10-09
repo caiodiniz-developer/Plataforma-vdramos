@@ -48,7 +48,8 @@ src/
   conteudo/     textos versionados (política de privacidade, conteúdo padrão)
 supabase/
   migrations/   modelo de dados, RLS, funções e views
-  functions/    Edge Functions: acesso-aluno, admin-alunos, contato, excluir-conta
+  functions/    Edge Functions: acesso-aluno, admin-alunos, contato, excluir-conta,
+                notificar-resposta, enviar-aviso
   tests/        testes de RLS e de funções do banco
 ```
 
@@ -64,7 +65,7 @@ vinculado:
 
 ```bash
 supabase db push
-supabase functions deploy acesso-aluno admin-alunos contato excluir-conta
+supabase functions deploy acesso-aluno admin-alunos contato excluir-conta notificar-resposta enviar-aviso
 supabase secrets set VERSAO_TERMO=2026-10-v1 ORIGENS_PERMITIDAS=https://vitorramos.com
 ```
 
@@ -87,8 +88,19 @@ select id, 'admin', 'Vitor Ramos', email from auth.users where email = '<e-mail 
 
 Pontos de atenção antes de ir para produção:
 
-- **Senha do aluno:** o sistema não envia e-mail. Quem esquece a senha pede ao professor,
+- **Senha do aluno:** não há e-mail de recuperação. Quem esquece a senha pede ao professor,
   que redefine em Alunos.
+- **E-mail (respostas de atividade e avisos):** o envio usa o [Resend](https://resend.com).
+  Crie a conta, verifique o domínio do remetente e grave os segredos:
+
+  ```bash
+  supabase secrets set RESEND_API_KEY=<chave> "EMAIL_REMETENTE=Vitor Ramos <avisos@seudominio.com>"
+  supabase secrets set EMAIL_DO_PROFESSOR=<e-mail que recebe as respostas>   # opcional
+  supabase secrets set ENDERECO_DO_SITE=https://seu-site
+  ```
+
+  Sem esses segredos a plataforma funciona normalmente, só não envia e-mail: o aviso é
+  publicado na plataforma e a tela informa que o e-mail não está configurado.
 - **Sessão:** a duração é ajustada em Authentication > Sessions.
 - **Retenção:** habilite a extensão `pg_cron` antes de aplicar as migrations para o job
   mensal de retenção ser agendado.
@@ -103,7 +115,7 @@ Pontos de atenção antes de ir para produção:
 - **Banco:** as migrations rodam num Postgres em memória (PGlite) com papéis e `auth.uid()`
   simulados; os testes exercitam as políticas de RLS como aluno, admin e visitante. Não
   precisa de Docker.
-- **Edge Functions:** o código real das quatro funções roda no Vitest com `Deno` e o Supabase
+- **Edge Functions:** o código real das seis funções roda no Vitest com `Deno` e o Supabase
   simulados em memória (`supabase/tests/funcoes`). Cobre o fluxo de cada função; não cobre o
   runtime do Deno.
 - **Ponta a ponta:** o Playwright sobe o build de produção em dois servidores. Um sem backend
