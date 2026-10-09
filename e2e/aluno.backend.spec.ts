@@ -335,6 +335,88 @@ test.describe('sala ao vivo', () => {
   })
 })
 
+test.describe('ajustes do guia · aluno', () => {
+  test('antes do portal, pergunta sobre comunicações; "Quero receber" grava e-mail e consentimento', async ({ page }) => {
+    const cenario = cenarioPadrao({ respondeuComunicacao: false, emailDeContato: null })
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Quer receber comunicações do professor?' })).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Área do aluno' })).toHaveCount(0)
+    await semViolacoesDeAcessibilidade(page)
+
+    await page.getByRole('button', { name: 'Quero receber' }).click()
+    await expect(page.getByRole('alert')).toContainText('Para receber, informe um e-mail.')
+
+    await page.getByLabel('Seu e-mail (opcional)').fill('ana@contato.com')
+    cenario.respondeuComunicacao = true
+    await page.getByRole('button', { name: 'Quero receber' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
+
+    expect(api.enviadas('/rest/v1/perfil')[0].corpo).toEqual({ email_contato: 'ana@contato.com' })
+    expect(api.enviadas('/rest/v1/consentimento')[0].corpo).toMatchObject({ finalidade: 'comunicacao_professor', concedido: true })
+  })
+
+  test('"Agora não" também libera o portal e não pede de novo', async ({ page }) => {
+    const cenario = cenarioPadrao({ respondeuComunicacao: false, emailDeContato: null })
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno')
+    await expect(page.getByRole('heading', { name: 'Quer receber comunicações do professor?' })).toBeVisible()
+    cenario.respondeuComunicacao = true
+    await page.getByRole('button', { name: 'Agora não' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
+    expect(api.enviadas('/rest/v1/consentimento')[0].corpo).toMatchObject({ finalidade: 'comunicacao_professor', concedido: false })
+    expect(api.enviadas('/rest/v1/perfil')).toHaveLength(0)
+  })
+
+  test('aulas presenciais e meus dados têm o caminho de volta ao painel', async ({ page }) => {
+    const cenario = cenarioPadrao({ statusDaSessao: 'agendada' })
+    await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    for (const rota of [`/aluno/turmas/${CODIGO}`, '/aluno/meus-dados']) {
+      await page.goto(rota)
+      await page.getByRole('link', { name: 'Voltar ao painel' }).click()
+      await expect(page).toHaveURL('/aluno')
+      await expect(page.getByRole('heading', { level: 1, name: 'Olá, Ana' })).toBeVisible()
+    }
+  })
+
+  test('minhas turmas: entra em outra turma pelo ID e não deixa sair da única', async ({ page }) => {
+    const cenario = cenarioPadrao()
+    const api = await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno/minhas-turmas')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Minhas turmas' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: CODIGO })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Sair da turma' })).toBeDisabled()
+    await semViolacoesDeAcessibilidade(page)
+
+    await page.getByRole('button', { name: 'Entrar na turma' }).click()
+    await expect(page.getByRole('alert')).toContainText('Informe o ID da turma.')
+    await page.getByLabel('ID da turma').fill('turma-002')
+    await page.getByRole('button', { name: 'Entrar na turma' }).click()
+    await expect.poll(() => api.enviadas('rpc/entrar_na_turma').length).toBe(1)
+    expect(api.enviadas('rpc/entrar_na_turma')[0].corpo).toEqual({ p_codigo: 'TURMA-002' })
+    expect(api.naoTratadas).toEqual([])
+  })
+
+  test('aviso e conversa mostram os links clicáveis', async ({ page }) => {
+    const cenario = cenarioPadrao()
+    await simularSupabase(page, respostasDe(cenario), cenario.usuario)
+    await page.goto('/aluno/avisos')
+    const link = page.getByRole('link', { name: 'https://exemplo.com/roteiro' })
+    await expect(link).toHaveAttribute('href', 'https://exemplo.com/roteiro')
+    await expect(link).toHaveAttribute('target', '_blank')
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+
+    await page.goto('/aluno/mensagens')
+    await page.getByRole('button', { name: 'Inserir link' }).click()
+    await page.getByLabel('Endereço').fill('exemplo.com/duvida')
+    await page.getByLabel('Texto do link (opcional)').fill('meu código')
+    await page.getByRole('button', { name: 'Inserir', exact: true }).click()
+    await expect(page.getByRole('textbox', { name: 'Escreva sua mensagem' })).toHaveValue('[meu código](https://exemplo.com/duvida)')
+  })
+})
+
 test.describe('meus dados', () => {
   test('mostra perfil e turmas, grava a comunicação e baixa o JSON', async ({ page }) => {
     const cenario = cenarioPadrao()
