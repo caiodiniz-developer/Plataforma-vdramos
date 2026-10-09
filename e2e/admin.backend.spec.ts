@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { cenarioPadrao, respostasDe } from './apoio/dados'
+import { cenarioPadrao, CODIGO, questaoDoProfessor, respostasDe } from './apoio/dados'
 import { ANA, PROFESSOR, SENHA_DE_TESTE, simularSupabase } from './apoio/supabase'
 
 async function semViolacoesDeAcessibilidade(page: Page) {
@@ -172,6 +172,103 @@ test.describe('painel do professor', () => {
     await page.goto('/admin/avisos')
     await expect(page.getByRole('heading', { name: 'Prova na quarta' })).toBeVisible()
     expect(api.naoTratadas).toEqual([])
+  })
+
+  test('questões: nascem ocultas, a chave libera uma e o botão geral libera todas', async ({ page }) => {
+    const cenario = cenarioPadrao({
+      usuario: PROFESSOR,
+      atividades: [questaoDoProfessor(), questaoDoProfessor({ id: 'dddddddd-0000-4000-8000-000000000011', titulo: 'Soma simples' })],
+    })
+    const api = await simularSupabase(page, respostasDe(cenario), PROFESSOR)
+    await page.goto('/admin/questoes')
+
+    const primeira = page.getByRole('listitem').filter({ hasText: 'Referência absoluta' })
+    await expect(primeira.getByText('Oculta').first()).toBeVisible()
+    await semViolacoesDeAcessibilidade(page)
+
+    await primeira.getByRole('switch', { name: 'Referência absoluta: visível para os alunos' }).click()
+    await expect.poll(() => api.enviadas('rpc/definir_visibilidade').length).toBe(1)
+    expect(api.enviadas('rpc/definir_visibilidade')[0].corpo).toEqual({ p_ids: ['dddddddd-0000-4000-8000-000000000010'], p_visivel: true })
+
+    await page.getByRole('button', { name: 'Liberar todas' }).click()
+    const confirmacao = page.getByRole('alertdialog')
+    await expect(confirmacao).toContainText('Liberar 2 questões?')
+    await confirmacao.getByRole('button', { name: 'Liberar todas' }).click()
+    await expect.poll(() => api.enviadas('rpc/definir_visibilidade').length).toBe(2)
+    expect((api.enviadas('rpc/definir_visibilidade')[1].corpo as { p_ids: string[]; p_visivel: boolean }).p_ids).toHaveLength(2)
+
+    // Nova questão: o botão principal salva oculta; liberar é a opção ao lado.
+    await page.getByRole('button', { name: 'Nova questão' }).click()
+    await expect(page.getByRole('button', { name: 'Salvar oculta' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Salvar e liberar' })).toBeVisible()
+  })
+
+  test('filtros por instituição e turma em conteúdos, atividades e questões', async ({ page }) => {
+    const cenario = cenarioPadrao({ usuario: PROFESSOR, atividades: [questaoDoProfessor()] })
+    await simularSupabase(page, respostasDe(cenario), PROFESSOR)
+    for (const rota of ['conteudos', 'atividades', 'questoes']) {
+      await page.goto(`/admin/${rota}`)
+      await expect(page.getByRole('combobox', { name: 'Filtrar por instituição' })).toBeVisible()
+      await page.getByRole('combobox', { name: 'Filtrar por turma' }).click()
+      await expect(page.getByRole('option', { name: CODIGO })).toBeVisible()
+      await page.keyboard.press('Escape')
+    }
+    await page.goto('/admin/conteudos')
+    await page.getByRole('combobox', { name: 'Filtrar por instituição' }).click()
+    await page.getByRole('option', { name: 'SENAI' }).click()
+    await expect(page.getByRole('heading', { name: 'Tabelas dinâmicas na prática' })).toBeVisible()
+  })
+
+  test('aviso para várias turmas, com link e pedido de envio por e-mail', async ({ page }) => {
+    const cenario = cenarioPadrao({ usuario: PROFESSOR })
+    const api = await simularSupabase(page, respostasDe(cenario), PROFESSOR)
+    await page.goto('/admin/avisos')
+    await page.getByRole('button', { name: 'Novo aviso' }).click()
+
+    await page.getByRole('radio', { name: 'Escolher turmas' }).click()
+    await page.getByRole('button', { name: 'Publicar aviso' }).click()
+    await expect(page.getByRole('alert')).toContainText('Escolha ao menos uma turma.')
+
+    await expect(page.getByRole('combobox', { name: 'Filtrar turmas por instituição' })).toBeVisible()
+    await page.getByRole('checkbox', { name: CODIGO }).check()
+    await page.getByLabel('Título').fill('Material novo')
+    await page.getByLabel('Aviso', { exact: true }).fill('Veja https://exemplo.com/material')
+    await page.getByRole('checkbox', { name: 'Enviar também por e-mail' }).check()
+    await semViolacoesDeAcessibilidade(page)
+    await page.getByRole('button', { name: 'Publicar aviso' }).click()
+
+    await expect.poll(() => api.enviadas('/rest/v1/aviso').length).toBe(1)
+    const linhas = api.enviadas('/rest/v1/aviso')[0].corpo as { turma_id: string; lote_id: string; titulo: string }[]
+    expect(linhas).toHaveLength(1)
+    expect(linhas[0]).toMatchObject({ titulo: 'Material novo', turma_id: 'aaaaaaaa-0000-4000-8000-000000000001' })
+    // O envio por e-mail usa o lote do aviso recém-publicado.
+    await expect.poll(() => api.enviadas('enviar-aviso').length).toBe(1)
+    expect(api.enviadas('enviar-aviso')[0].corpo).toEqual({ lote_id: linhas[0].lote_id })
+    await expect(page.getByText('E-mail ainda não configurado')).toBeVisible()
+  })
+
+  test('alunos: adicionar a outra turma chama a função do banco', async ({ page }) => {
+    const cenario = cenarioPadrao({ usuario: PROFESSOR })
+    const respostas = respostasDe(cenario)
+    // Uma segunda turma, para haver para onde adicionar.
+    const resumo = respostas.tabelas!.vw_turma_resumo
+    respostas.tabelas!.vw_turma_resumo = (chamada) => [
+      ...resumo(chamada),
+      { ...resumo(chamada)[0], id: 'aaaaaaaa-0000-4000-8000-000000000002', codigo: 'TURMA-002' },
+    ]
+    const api = await simularSupabase(page, respostas, PROFESSOR)
+    await page.goto('/admin/alunos')
+
+    await page.getByRole('row', { name: /Ana Souza/ }).getByRole('button', { name: 'Ações de Ana Souza' }).click()
+    await page.getByRole('menuitem', { name: 'Adicionar a outra turma' }).click()
+    const dialogo = page.getByRole('dialog', { name: 'Adicionar a outra turma' })
+    await expect(dialogo.getByRole('combobox')).toContainText('TURMA-002')
+    await dialogo.getByRole('button', { name: 'Adicionar' }).click()
+    await expect.poll(() => api.enviadas('rpc/matricular_em_turma').length).toBe(1)
+    expect(api.enviadas('rpc/matricular_em_turma')[0].corpo).toEqual({
+      p_aluno_autorizado_id: 'aa000000-0000-4000-8000-000000000001',
+      p_turma_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+    })
   })
 
   test('sair volta para a entrada e o painel deixa de abrir', async ({ page, isMobile }) => {
