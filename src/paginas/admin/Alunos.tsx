@@ -3,6 +3,7 @@ import {
   KeyRoundIcon,
   Loader2Icon,
   LockIcon,
+  GraduationCapIcon,
   MailIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -38,6 +39,7 @@ import {
   editarAluno,
   listarAlunos,
   listarTurmas,
+  matricularEmTurma,
   redefinirSenha,
   removerAluno,
   responderAoAluno,
@@ -57,6 +59,7 @@ type Formulario =
   | { tipo: 'editar'; aluno: AlunoDoProfessor }
   | { tipo: 'redefinir'; aluno: AlunoDoProfessor }
   | { tipo: 'mensagem'; aluno: AlunoDoProfessor }
+  | { tipo: 'turma'; aluno: AlunoDoProfessor; jaEsta: string[] }
 
 async function carregar() {
   const [alunos, turmas] = await Promise.all([listarAlunos(), listarTurmas()])
@@ -79,7 +82,9 @@ function FormularioDoAluno({
 }) {
   const id = useId()
   const aluno = formulario.tipo === 'criar' ? null : formulario.aluno
-  const [turmaId, setTurmaId] = useState(turmas[0]?.id ?? '')
+  // Em "Adicionar a outra turma", só entram as turmas em que ele ainda não está.
+  const outrasTurmas = formulario.tipo === 'turma' ? turmas.filter((t) => !formulario.jaEsta.includes(t.id)) : turmas
+  const [turmaId, setTurmaId] = useState(outrasTurmas[0]?.id ?? '')
   const [nome, setNome] = useState(aluno?.nome ?? '')
   const [matricula, setMatricula] = useState(aluno?.matricula ?? '')
   const [senha, setSenha] = useState('')
@@ -87,12 +92,19 @@ function FormularioDoAluno({
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
-  const TITULO = { criar: 'Novo aluno', editar: 'Editar aluno', redefinir: 'Redefinir senha', mensagem: 'Enviar mensagem' }[formulario.tipo]
+  const TITULO = {
+    criar: 'Novo aluno',
+    editar: 'Editar aluno',
+    redefinir: 'Redefinir senha',
+    mensagem: 'Enviar mensagem',
+    turma: 'Adicionar a outra turma',
+  }[formulario.tipo]
   const DESCRICAO = {
     criar: 'O aluno entra com o ID, o ID da turma e a senha. Sem senha inicial, ele cria a própria no primeiro acesso.',
     editar: 'O ID é o que o aluno digita para entrar.',
     redefinir: `Defina uma nova senha para ${aluno ? nomeDe(aluno) : ''} e avise o aluno.`,
     mensagem: `Mensagem privada para ${aluno ? nomeDe(aluno) : ''}. Só vocês dois veem.`,
+    turma: `${aluno ? nomeDe(aluno) : ''} continua na turma atual e passa a participar também da turma escolhida, com o mesmo ID e a mesma senha.`,
   }[formulario.tipo]
 
   function validar(): string | null {
@@ -100,7 +112,7 @@ function FormularioDoAluno({
       if (nome.trim().length < 3) return 'Informe o nome completo do aluno.'
       if (matricula.trim().length < 2) return 'Informe o ID do aluno.'
     }
-    if (formulario.tipo === 'criar' && !turmaId) return 'Escolha a turma.'
+    if ((formulario.tipo === 'criar' || formulario.tipo === 'turma') && !turmaId) return 'Escolha a turma.'
     if (formulario.tipo === 'redefinir' || (formulario.tipo === 'criar' && senha !== '')) return problemaDaSenha(senha)
     if (formulario.tipo === 'mensagem' && texto.trim() === '') return 'Escreva a mensagem.'
     return null
@@ -122,6 +134,9 @@ function FormularioDoAluno({
       } else if (formulario.tipo === 'editar') {
         await editarAluno(formulario.aluno, { nome, matricula })
         toast.success('Dados do aluno atualizados')
+      } else if (formulario.tipo === 'turma') {
+        await matricularEmTurma(formulario.aluno.aluno_autorizado_id, turmaId)
+        toast.success('Aluno adicionado à turma', { description: 'Ele troca de turma pelo menu da área do aluno.' })
       } else if (formulario.tipo === 'redefinir') {
         await redefinirSenha(formulario.aluno.aluno_autorizado_id, senha)
         toast.success('Senha redefinida')
@@ -185,6 +200,28 @@ function FormularioDoAluno({
               </div>
             </>
           )}
+          {formulario.tipo === 'turma' &&
+            (outrasTurmas.length === 0 ? (
+              <p className="border-2 border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                Este aluno já está em todas as turmas cadastradas.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor={`${id}-outra`}>Turma</Label>
+                <Select value={turmaId} onValueChange={setTurmaId}>
+                  <SelectTrigger id={`${id}-outra`}>
+                    <SelectValue placeholder="Escolha" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {outrasTurmas.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.codigo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
           {comSenha && (
             <div className="flex flex-col gap-2">
               <Label htmlFor={`${id}-senha`}>{formulario.tipo === 'criar' ? 'Senha inicial (opcional)' : 'Nova senha'}</Label>
@@ -218,9 +255,9 @@ function FormularioDoAluno({
             <Button type="button" variant="outline" onClick={() => aoFechar(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={enviando}>
+            <Button type="submit" disabled={enviando || (formulario.tipo === 'turma' && outrasTurmas.length === 0)}>
               {enviando && <Loader2Icon className="animate-spin" aria-hidden="true" />}
-              {formulario.tipo === 'mensagem' ? 'Enviar' : 'Salvar'}
+              {formulario.tipo === 'mensagem' ? 'Enviar' : formulario.tipo === 'turma' ? 'Adicionar' : 'Salvar'}
             </Button>
           </DialogFooter>
         </form>
@@ -386,6 +423,21 @@ export default function Alunos() {
                                 <DropdownMenuItem onSelect={() => setFormulario({ tipo: 'editar', aluno: a })}>
                                   <PencilIcon aria-hidden="true" />
                                   Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    setFormulario({
+                                      tipo: 'turma',
+                                      aluno: a,
+                                      // Todas as turmas em que a mesma pessoa (ou o mesmo ID) já está.
+                                      jaEsta: alunos
+                                        .filter((o) => (a.perfil_id ? o.perfil_id === a.perfil_id : o.matricula === a.matricula))
+                                        .map((o) => o.turma_id),
+                                    })
+                                  }
+                                >
+                                  <GraduationCapIcon aria-hidden="true" />
+                                  Adicionar a outra turma
                                 </DropdownMenuItem>
                                 {a.inscricao_id && (
                                   <>
