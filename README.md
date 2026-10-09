@@ -137,7 +137,8 @@ Na primeira vez, instale o navegador de teste: `npx playwright install chromium`
 
 O que os testes **não** provam: a integração com um projeto Supabase de verdade (Auth,
 Realtime e Storage em produção). Para isso existe `npm run verificar:backend`, que roda as
-conferências contra o projeto do `.env` (cria e apaga um aluno temporário).
+conferências contra o projeto do `.env`. Ele trabalha em duas turmas temporárias, criadas e
+apagadas pelo próprio script, para que nada do que publica chegue a alunos de verdade.
 
 ## Como contribuir
 
