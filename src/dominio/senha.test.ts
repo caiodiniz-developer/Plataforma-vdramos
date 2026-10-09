@@ -40,6 +40,12 @@ describe('validarCadastro', () => {
     expect(validarCadastro({ ...valido, confirmacao: BOA + '4' }).confirmacao).toBe('As senhas não coincidem.')
   })
 
+  it('o e-mail é opcional, mas quando vem precisa ter formato de e-mail', () => {
+    expect(validarCadastro({ ...valido, email: '' })).toEqual({})
+    expect(validarCadastro({ ...valido, email: ' joao@empresa.com ' })).toEqual({})
+    expect(validarCadastro({ ...valido, email: 'joao@' }).email).toBe('Confira o e-mail ou deixe o campo em branco.')
+  })
+
   it('não conclui sem o aceite do termo', () => {
     expect(validarCadastro({ ...valido, aceiteTermo: false }).aceiteTermo).toBeDefined()
   })

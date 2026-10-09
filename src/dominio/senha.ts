@@ -20,6 +20,8 @@ export type CadastroDeAluno = {
   senha: string
   confirmacao: string
   aceiteTermo: boolean
+  /** Opcional: e-mail de contato, para comunicações que o aluno autorizar depois. */
+  email?: string
 }
 
 export type ErrosDeCadastro = Partial<Record<keyof CadastroDeAluno, string>>
@@ -34,5 +36,7 @@ export function validarCadastro(c: CadastroDeAluno): ErrosDeCadastro {
   if (problema) erros.senha = problema
   if (c.confirmacao !== c.senha) erros.confirmacao = 'As senhas não coincidem.'
   if (!c.aceiteTermo) erros.aceiteTermo = 'É preciso aceitar o termo de uso para continuar.'
+  const email = c.email?.trim() ?? ''
+  if (email !== '' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) erros.email = 'Confira o e-mail ou deixe o campo em branco.'
   return erros
 }
