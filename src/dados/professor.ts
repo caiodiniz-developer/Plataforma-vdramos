@@ -178,6 +178,10 @@ export type AlunoDoProfessor = {
   questoes_corretas: number
   duvidas: number
   feedbacks: number
+  /** E-mail que o aluno informou, se informou. */
+  email_contato: string | null
+  /** Consentimento de comunicações vigente. */
+  aceita_comunicacao: boolean
 }
 
 export async function listarAlunos(): Promise<AlunoDoProfessor[]> {
@@ -202,6 +206,15 @@ export async function redefinirSenha(alunoAutorizadoId: string, senha: string): 
 
 export async function removerAluno(alunoAutorizadoId: string): Promise<void> {
   await chamarFuncao('admin-alunos', { acao: 'remover', aluno_autorizado_id: alunoAutorizadoId })
+}
+
+/**
+ * Coloca o aluno em mais uma turma. Com conta, é a mesma conta nas duas: ele
+ * entra com a mesma senha e troca de turma no menu.
+ */
+export async function matricularEmTurma(alunoAutorizadoId: string, turmaId: string): Promise<void> {
+  const { error } = await supabase().rpc('matricular_em_turma', { p_aluno_autorizado_id: alunoAutorizadoId, p_turma_id: turmaId })
+  if (error) throw paraErroDeDados(error)
 }
 
 /** Bloquear corta o acesso na hora (a RLS deixa de devolver dados ao aluno). */
@@ -357,6 +370,8 @@ export type AtividadeDoProfessor = {
   categoria: string | null
   conteudo_id: string | null
   arquivo_path: string | null
+  /** O aluno pode anexar arquivos à resposta. */
+  aceita_arquivo: boolean
   status: 'rascunho' | 'publicada' | 'encerrada'
   publicada_em: string | null
   created_at: string
@@ -382,7 +397,7 @@ export async function listarAtividades(modo: 'atividades' | 'questoes'): Promise
   const { data, error } = await supabase()
     .from('atividade')
     .select(
-      `id, turma_id, tipo, titulo, descricao, instrucoes_md, prazo_em, dificuldade, categoria, conteudo_id, arquivo_path, status, publicada_em, created_at,
+      `id, turma_id, tipo, titulo, descricao, instrucoes_md, prazo_em, dificuldade, categoria, conteudo_id, arquivo_path, aceita_arquivo, status, publicada_em, created_at,
        itens:atividade_item (ordem, enunciado, tipo_resposta, obrigatorio, explicacao,
          opcoes:atividade_opcao (ordem, texto, correta),
          respostas:atividade_resposta (inscricao_id))`,
@@ -418,6 +433,7 @@ export type DadosDaAtividade = {
   categoria: string
   conteudo_id: string | null
   arquivo: File | null
+  aceita_arquivo: boolean
   itens: ItemEditavel[]
 }
 
@@ -438,6 +454,7 @@ export async function salvarAtividade(dados: DadosDaAtividade, existente?: Ativi
     dificuldade: dados.dificuldade,
     categoria: dados.categoria.trim() || null,
     conteudo_id: dados.conteudo_id,
+    aceita_arquivo: dados.aceita_arquivo,
     mostrar_resultado: 'apos_responder',
   }
   if (dados.arquivo) campos.arquivo_path = await enviarArquivo('atividades', dados.arquivo)
@@ -492,6 +509,18 @@ export async function encerrarAtividade(id: string): Promise<void> {
   if (error) throw paraErroDeDados(error)
 }
 
+export type ResultadoDaVisibilidade = { alteradas: number; puladas: { titulo: string; motivo: string }[] }
+
+/**
+ * Libera (visível para os alunos) ou oculta várias questões ou atividades de
+ * uma vez. As que não podem ser liberadas voltam em `puladas`, com o motivo.
+ */
+export async function definirVisibilidade(ids: string[], visivel: boolean): Promise<ResultadoDaVisibilidade> {
+  const { data, error } = await supabase().rpc('definir_visibilidade', { p_ids: ids, p_visivel: visivel })
+  if (error) throw paraErroDeDados(error)
+  return data as ResultadoDaVisibilidade
+}
+
 export async function excluirAtividade(id: string): Promise<void> {
   const { error } = await supabase().from('atividade').delete().eq('id', id)
   if (error) throw paraErroDeDados(error)
@@ -517,6 +546,20 @@ export async function respostasDaAtividade(atividadeId: string): Promise<Respost
     .order('item')
   if (error) throw paraErroDeDados(error)
   return (data ?? []) as RespostaRecebida[]
+}
+
+export type EntregaRecebida = { id: string; aluno: string; nome_arquivo: string; tamanho_bytes: number; arquivo_path: string; created_at: string }
+
+/** Arquivos que os alunos anexaram à atividade. */
+export async function entregasDaAtividade(atividadeId: string): Promise<EntregaRecebida[]> {
+  const { data, error } = await supabase()
+    .from('atividade_entrega')
+    .select('id, nome_arquivo, tamanho_bytes, arquivo_path, created_at, inscricao:inscricao_id (perfil:perfil_id (nome))')
+    .eq('atividade_id', atividadeId)
+    .order('created_at')
+  if (error) throw paraErroDeDados(error)
+  type Bruta = Omit<EntregaRecebida, 'aluno'> & { inscricao: { perfil: { nome: string } | null } | null }
+  return ((data ?? []) as unknown as Bruta[]).map(({ inscricao, ...e }) => ({ ...e, aluno: inscricao?.perfil?.nome ?? 'Aluno' }))
 }
 
 // ---------------------------------------------------------------------------
@@ -661,18 +704,45 @@ export async function marcarFeedback(id: string, lido: boolean): Promise<void> {
   if (error) throw paraErroDeDados(error)
 }
 
-export async function listarTodosOsAvisos(): Promise<Aviso[]> {
-  const { data, error } = await supabase().from('aviso').select('id, turma_id, titulo, texto, created_at').order('created_at', { ascending: false })
+/** Um aviso como o professor publicou: uma vez, para todos ou para N turmas. */
+export type AvisoDoProfessor = { lote_id: string; titulo: string; texto: string; created_at: string; turma_ids: string[]; para_todos: boolean }
+
+export async function listarTodosOsAvisos(): Promise<AvisoDoProfessor[]> {
+  const { data, error } = await supabase().from('aviso').select('lote_id, turma_id, titulo, texto, created_at').order('created_at', { ascending: false })
   if (error) throw paraErroDeDados(error)
-  return (data ?? []) as Aviso[]
+
+  const lotes = new Map<string, AvisoDoProfessor>()
+  for (const linha of (data ?? []) as (Aviso & { lote_id: string })[]) {
+    const lote = lotes.get(linha.lote_id) ?? { lote_id: linha.lote_id, titulo: linha.titulo, texto: linha.texto, created_at: linha.created_at, turma_ids: [], para_todos: false }
+    if (linha.turma_id === null) lote.para_todos = true
+    else lote.turma_ids.push(linha.turma_id)
+    lotes.set(linha.lote_id, lote)
+  }
+  return [...lotes.values()]
 }
 
-export async function publicarAviso(aviso: { turma_id: string | null; titulo: string; texto: string }): Promise<void> {
-  const { error } = await supabase().from('aviso').insert({ turma_id: aviso.turma_id, titulo: aviso.titulo.trim(), texto: aviso.texto.trim() })
+/**
+ * Publica o aviso para todos os alunos (`turmaIds` vazio) ou para as turmas
+ * escolhidas. Devolve o lote, que identifica o aviso no envio por e-mail.
+ */
+export async function publicarAviso(aviso: { turmaIds: string[]; titulo: string; texto: string }): Promise<string> {
+  const lote_id = crypto.randomUUID()
+  const base = { titulo: aviso.titulo.trim(), texto: aviso.texto.trim(), lote_id }
+  const linhas: { titulo: string; texto: string; lote_id: string; turma_id: string | null }[] =
+    aviso.turmaIds.length === 0 ? [{ ...base, turma_id: null }] : aviso.turmaIds.map((turma_id) => ({ ...base, turma_id }))
+  const { error } = await supabase().from('aviso').insert(linhas)
   if (error) throw paraErroDeDados(error)
+  return lote_id
 }
 
-export async function excluirAviso(id: string): Promise<void> {
-  const { error } = await supabase().from('aviso').delete().eq('id', id)
+export type EnvioDoAviso = { configurado: boolean; destinatarios: number; enviados: number }
+
+/** Manda o aviso por e-mail a quem autorizou comunicações e informou e-mail. */
+export async function enviarAvisoPorEmail(loteId: string): Promise<EnvioDoAviso> {
+  return chamarFuncao<EnvioDoAviso>('enviar-aviso', { lote_id: loteId })
+}
+
+export async function excluirAviso(loteId: string): Promise<void> {
+  const { error } = await supabase().from('aviso').delete().eq('lote_id', loteId)
   if (error) throw paraErroDeDados(error)
 }
