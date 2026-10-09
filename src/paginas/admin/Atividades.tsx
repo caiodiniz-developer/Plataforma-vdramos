@@ -650,13 +650,15 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
       acao: liberar ? 'Liberar todas' : 'Ocultar todas',
       executar: async () => {
         const { alteradas, puladas } = await definirVisibilidade(ids, liberar)
+        // Um retorno só: ou tudo certo, ou quantas ficaram de fora e por quê.
         if (puladas.length > 0) {
           toast.warning(`${alteradas} ${alteradas === 1 ? 'liberada' : 'liberadas'}, ${puladas.length} sem gabarito`, {
             description: `Ficaram ocultas: ${puladas.map((p) => p.titulo).join(', ')}.`,
           })
+        } else {
+          toast.success(liberar ? 'Questões liberadas' : 'Questões ocultas')
         }
       },
-      sucesso: liberar ? 'Questões liberadas' : 'Questões ocultas',
     })
   }
 

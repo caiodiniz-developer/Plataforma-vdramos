@@ -19,7 +19,8 @@ export type Confirmacao = {
   /** Ações que não têm volta usam o botão destrutivo. */
   destrutiva?: boolean
   executar: () => Promise<void>
-  sucesso: string
+  /** Aviso de sucesso. Sem ele, quem executa a ação dá o próprio retorno. */
+  sucesso?: string
 }
 
 /**
@@ -34,7 +35,7 @@ export function Confirmar({ pedido, aoFechar }: { pedido: Confirmacao | null; ao
     setExecutando(true)
     try {
       await pedido.executar()
-      toast.success(pedido.sucesso)
+      if (pedido.sucesso) toast.success(pedido.sucesso)
       aoFechar(true)
     } catch (falha) {
       toast.error((falha as Error).message)
