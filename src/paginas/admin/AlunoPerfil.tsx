@@ -203,6 +203,14 @@ export default function AlunoPerfil() {
                   <dt className="eyebrow text-muted-foreground">Último acesso</dt>
                   <dd>{aluno.ultimo_acesso_em ? formatarDataHora(aluno.ultimo_acesso_em, FUSO) : 'Nunca'}</dd>
                 </div>
+                <div className="sm:col-span-2">
+                  <dt className="eyebrow text-muted-foreground">E-mail de contato</dt>
+                  <dd className="break-all">{aluno.email_contato ?? 'Não informado'}</dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="eyebrow text-muted-foreground">Comunicações por e-mail</dt>
+                  <dd>{aluno.aceita_comunicacao ? 'Autorizadas pelo aluno' : 'Não autorizadas'}</dd>
+                </div>
               </dl>
 
               {!perfil ? (
