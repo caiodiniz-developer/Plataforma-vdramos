@@ -17,7 +17,7 @@ export function clienteAtual() {
  * Carrega uma Edge Function de verdade (`supabase/functions/<nome>/index.ts`)
  * com `Deno` simulado e devolve o tratador que ela registrou em `Deno.serve`.
  */
-export async function carregarFuncao(nome: 'acesso-aluno' | 'admin-alunos' | 'contato' | 'excluir-conta', env: Record<string, string> = {}) {
+export async function carregarFuncao(nome: 'acesso-aluno' | 'admin-alunos' | 'contato' | 'excluir-conta' | 'notificar-resposta' | 'enviar-aviso', env: Record<string, string> = {}) {
   const banco = (estado.__bancoFalso = new BancoFalso())
   let tratador: Tratador | undefined
   const variaveis: Record<string, string> = {

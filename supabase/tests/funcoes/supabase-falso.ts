@@ -13,6 +13,7 @@ type Resposta<T> = { data: T; error: { message: string; code?: string } | null }
 const UNICOS: Record<string, string[]> = {
   inscricao: ['aluno_autorizado_id'],
   perfil: ['id'],
+  atividade_email: ['atividade_id', 'inscricao_id'],
 }
 
 export class BancoFalso {
@@ -25,6 +26,8 @@ export class BancoFalso {
   usuarios = new Map<string, string>()
   /** Usuário do JWT de quem chama (para `auth.getUser`). */
   usuarioLogado: { id: string } | null = null
+  /** Arquivos do Storage, por caminho. */
+  arquivos = new Map<string, Uint8Array>()
   /** Simula falha do Auth ao criar usuário. */
   falharCriacaoDeUsuario = false
   private sequencia = 0
@@ -159,6 +162,18 @@ class Consulta implements PromiseLike<Resposta<unknown>> {
 export function criarClienteFalso(banco: BancoFalso) {
   return {
     from: (tabela: string) => new Consulta(banco, tabela),
+
+    storage: {
+      from: () => ({
+        async createSignedUrl(caminho: string) {
+          return { data: { signedUrl: `https://arquivos.teste/${caminho}?assinatura=teste` }, error: null }
+        },
+        async download(caminho: string) {
+          const bytes = banco.arquivos.get(caminho)
+          return bytes ? { data: new Blob([bytes as BlobPart]), error: null } : { data: null, error: { message: 'não encontrado' } }
+        },
+      }),
+    },
 
     async rpc(nome: string, args: Record<string, unknown>) {
       if (nome !== 'dentro_do_limite') return { data: null, error: { message: `rpc desconhecida: ${nome}` } }
