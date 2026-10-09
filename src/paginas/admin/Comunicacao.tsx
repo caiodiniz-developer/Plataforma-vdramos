@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { Conversa } from '@/componentes/plataforma/Conversa'
+import { TextoComLinks } from '@/componentes/plataforma/Links'
 import { assinarMudancas, ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
 import {
   excluirAviso,
@@ -357,7 +358,7 @@ export function Avisos() {
                               <span className="font-mono text-xs text-muted-foreground">{formatarDataHora(a.created_at, FUSO)}</span>
                             </div>
                             <h2 className="text-[19px]">{a.titulo}</h2>
-                            <p className="text-[15px] whitespace-pre-wrap">{a.texto}</p>
+                            <TextoComLinks texto={a.texto} className="text-[15px]" />
                           </div>
                           <Button
                             size="icon-sm"

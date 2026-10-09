@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CabecalhoDaPagina, Carregado, Numero, Vazio } from '@/componentes/plataforma/Blocos'
 import { Conversa } from '@/componentes/plataforma/Conversa'
+import { TextoComLinks } from '@/componentes/plataforma/Links'
 import { ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
 import {
   buscarPerfilDoAluno,
@@ -97,8 +98,8 @@ function Abas({ aluno, perfil, children }: { aluno: AlunoDoProfessor; perfil: Pe
                         <Quando em={d.created_at} />
                       </span>
                     </div>
-                    <p className="text-[15px] whitespace-pre-wrap">{d.pergunta}</p>
-                    {d.resposta && <p className="border-l-2 border-primary pl-3 text-sm whitespace-pre-wrap">{d.resposta}</p>}
+                    <TextoComLinks texto={d.pergunta} className="text-[15px]" />
+                    {d.resposta && <TextoComLinks texto={d.resposta} className="border-l-2 border-primary pl-3 text-sm" />}
                   </Linha>
                 ))}
               </ul>
