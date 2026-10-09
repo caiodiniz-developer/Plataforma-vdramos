@@ -19,6 +19,7 @@ const Duvidas = lazy(() => import('@/paginas/aluno/Duvidas'))
 const Mensagens = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Mensagens })))
 const Feedback = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Feedback })))
 const Avisos = lazy(() => import('@/paginas/aluno/Comunicacao').then((m) => ({ default: m.Avisos })))
+const MinhasTurmas = lazy(() => import('@/paginas/aluno/MinhasTurmas'))
 const Turma = lazy(() => import('@/paginas/aluno/Turma'))
 const AoVivo = lazy(() => import('@/paginas/aluno/AoVivo'))
 const MeusDados = lazy(() => import('@/paginas/aluno/MeusDados'))
@@ -69,6 +70,7 @@ function App() {
               <Route path="mensagens" element={<Mensagens />} />
               <Route path="feedback" element={<Feedback />} />
               <Route path="avisos" element={<Avisos />} />
+              <Route path="minhas-turmas" element={<MinhasTurmas />} />
             </Route>
             <Route
               path="/aluno/turmas/:codigo"
