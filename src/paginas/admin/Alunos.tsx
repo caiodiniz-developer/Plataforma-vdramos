@@ -18,6 +18,7 @@ import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu,
@@ -88,6 +89,8 @@ function FormularioDoAluno({
   const [nome, setNome] = useState(aluno?.nome ?? '')
   const [matricula, setMatricula] = useState(aluno?.matricula ?? '')
   const [senha, setSenha] = useState('')
+  // No cadastro, turmas além da principal em que o aluno já entra.
+  const [extras, setExtras] = useState<Set<string>>(new Set())
   const [texto, setTexto] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
@@ -127,10 +130,15 @@ function FormularioDoAluno({
     setErro(null)
     try {
       if (formulario.tipo === 'criar') {
-        await criarAluno({ turmaId, matricula, nome, senha })
-        toast.success('Aluno criado', {
+        const outras = [...extras].filter((t) => t !== turmaId)
+        const { falharam } = await criarAluno({ turmaId, matricula, nome, senha, outrasTurmas: outras })
+        toast.success(outras.length - falharam.length > 0 ? `Aluno criado em ${1 + outras.length - falharam.length} turmas` : 'Aluno criado', {
           description: senha === '' ? 'Ele cria a própria senha no primeiro acesso.' : 'Ele já pode entrar com o ID, a turma e a senha.',
         })
+        if (falharam.length > 0) {
+          const codigos = turmas.filter((t) => falharam.includes(t.id)).map((t) => t.codigo)
+          toast.warning(`Não entrou em: ${codigos.join(', ')}`, { description: 'O ID já está em uso nessa turma. Use "Adicionar a outra turma" depois de conferir.' })
+        }
       } else if (formulario.tipo === 'editar') {
         await editarAluno(formulario.aluno, { nome, matricula })
         toast.success('Dados do aluno atualizados')
@@ -198,6 +206,35 @@ function FormularioDoAluno({
                   </div>
                 )}
               </div>
+              {formulario.tipo === 'criar' && turmas.length > 1 && (
+                <fieldset className="flex flex-col gap-2 border-2 p-3">
+                  <legend className="px-1 text-sm font-semibold">Também nestas turmas (opcional)</legend>
+                  <ul className="grid max-h-[140px] gap-2 overflow-y-auto sm:grid-cols-2">
+                    {turmas
+                      .filter((t) => t.id !== turmaId)
+                      .map((t) => (
+                        <li key={t.id} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`${id}-extra-${t.id}`}
+                            checked={extras.has(t.id)}
+                            onCheckedChange={(v) =>
+                              setExtras((atuais) => {
+                                const novas = new Set(atuais)
+                                if (v === true) novas.add(t.id)
+                                else novas.delete(t.id)
+                                return novas
+                              })
+                            }
+                          />
+                          <Label htmlFor={`${id}-extra-${t.id}`} className="font-mono text-[13px] font-normal">
+                            {t.codigo}
+                          </Label>
+                        </li>
+                      ))}
+                  </ul>
+                  <p className="text-xs text-muted-foreground">O aluno usa o mesmo ID e a mesma senha em todas e troca de turma pelo menu.</p>
+                </fieldset>
+              )}
             </>
           )}
           {formulario.tipo === 'turma' &&
