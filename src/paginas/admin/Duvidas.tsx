@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
+import { comLink, InserirLink, TextoComLinks } from '@/componentes/plataforma/Links'
 import { assinarMudancas, urlAssinada } from '@/dados/apoio'
 import { definirStatusDaDuvida, listarDuvidas, responderDuvida, type DuvidaDoProfessor } from '@/dados/professor'
 import { contem } from '@/dominio/busca'
@@ -45,6 +46,10 @@ function Resposta({ duvida, aoSalvar }: { duvida: DuvidaDoProfessor; aoSalvar: (
     <form onSubmit={aoEnviar} noValidate className="flex flex-col gap-2 border-t-2 pt-4">
       <Label htmlFor={`${id}-resposta`}>{duvida.resposta ? 'Editar resposta' : 'Sua resposta'}</Label>
       <Textarea id={`${id}-resposta`} rows={4} maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)} />
+      <div className="flex flex-wrap items-center gap-2">
+        <InserirLink aoInserir={(trecho) => setTexto((atual) => comLink(atual, trecho))} />
+        <span className="text-xs text-muted-foreground">Endereços que começam com https:// também viram link.</span>
+      </div>
       {erro && (
         <p role="alert" className="text-[13px] font-semibold text-destructive">
           {erro}
@@ -139,7 +144,7 @@ export default function Duvidas() {
                           </div>
                           <h2 className="text-[19px]">{d.titulo}</h2>
                           {d.conteudo && <p className="text-xs text-muted-foreground">Sobre: {d.conteudo}</p>}
-                          <p className="text-[15px] whitespace-pre-wrap">{d.pergunta}</p>
+                          <TextoComLinks texto={d.pergunta} className="text-[15px]" />
                           {d.anexo_path && (
                             <Button variant="link" size="sm" className="self-start px-0" onClick={() => void abrirAnexo(d.anexo_path!)}>
                               <PaperclipIcon aria-hidden="true" />
@@ -152,7 +157,7 @@ export default function Duvidas() {
                               <p className="eyebrow text-muted-foreground">
                                 Sua resposta{d.respondida_em && ` · ${formatarDataHora(d.respondida_em, FUSO)}`}
                               </p>
-                              <p className="text-[15px] whitespace-pre-wrap">{d.resposta}</p>
+                              <TextoComLinks texto={d.resposta} className="text-[15px]" />
                             </div>
                           )}
 
