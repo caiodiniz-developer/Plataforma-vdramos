@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Carregado, FaixaDeCores, Numero, Selo, Vazio, type Cor } from '@/componentes/plataforma/Blocos'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
+import { TextoComLinks } from '@/componentes/plataforma/Links'
 import { useSessao } from '@/contextos/Sessao'
 import {
   conteudosAcessados,
@@ -291,7 +292,7 @@ export default function Inicio() {
                     {avisos.slice(0, 3).map((a) => (
                       <li key={a.id} className="border-l-4 border-green pl-3">
                         <p className="font-semibold">{a.titulo}</p>
-                        <p className="text-sm text-muted-foreground">{a.texto}</p>
+                        <TextoComLinks texto={a.texto} className="text-sm text-muted-foreground" />
                         <p className="mt-1 font-mono text-[11px] text-muted-foreground">{formatarDataHora(a.created_at, FUSO)}</p>
                       </li>
                     ))}

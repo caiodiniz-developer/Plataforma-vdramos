@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
+import { TextoComLinks } from '@/componentes/plataforma/Links'
 import {
   ANEXO_MAXIMO_MB,
   assinarMudancas,
@@ -129,7 +130,7 @@ export default function Duvidas() {
                           <span className="ml-auto font-mono text-xs text-muted-foreground">{formatarDataHora(d.created_at, FUSO)}</span>
                         </div>
                         <h2 className="text-[19px]">{d.titulo}</h2>
-                        <p className="text-[15px] whitespace-pre-wrap">{d.pergunta}</p>
+                        <TextoComLinks texto={d.pergunta} className="text-[15px]" />
                         {d.anexo_path && (
                           <Button variant="link" size="sm" className="self-start px-0" onClick={() => void abrirAnexo(d.anexo_path!)}>
                             <PaperclipIcon aria-hidden="true" />
@@ -142,7 +143,7 @@ export default function Duvidas() {
                               Resposta do professor
                               {d.respondida_em && ` · ${formatarDataHora(d.respondida_em, FUSO)}`}
                             </p>
-                            <p className="text-[15px] whitespace-pre-wrap">{d.resposta}</p>
+                            <TextoComLinks texto={d.resposta} className="text-[15px]" />
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">Aguardando a resposta do professor.</p>

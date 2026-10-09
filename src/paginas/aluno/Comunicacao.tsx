@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { CabecalhoDaPagina, Carregado, Vazio } from '@/componentes/plataforma/Blocos'
 import { Conversa } from '@/componentes/plataforma/Conversa'
 import { useTurmaAtual } from '@/componentes/plataforma/LayoutAluno'
+import { TextoComLinks } from '@/componentes/plataforma/Links'
 import {
   assinarMudancas,
   enviarFeedback,
@@ -194,7 +195,7 @@ export function Avisos() {
                         <span className="ml-auto font-mono text-xs text-muted-foreground">{formatarDataHora(a.created_at, FUSO)}</span>
                       </div>
                       <h2 className="text-[19px]">{a.titulo}</h2>
-                      <p className="text-[15px] whitespace-pre-wrap">{a.texto}</p>
+                      <TextoComLinks texto={a.texto} className="text-[15px]" />
                     </CardContent>
                   </Card>
                 </li>
