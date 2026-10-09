@@ -254,6 +254,33 @@ test.describe('painel do professor', () => {
     await expect(page.getByText('E-mail ainda não configurado')).toBeVisible()
   })
 
+  test('alunos: o cadastro já pode colocar o aluno em mais de uma turma', async ({ page }) => {
+    const cenario = cenarioPadrao({ usuario: PROFESSOR })
+    const respostas = respostasDe(cenario)
+    const resumo = respostas.tabelas!.vw_turma_resumo
+    respostas.tabelas!.vw_turma_resumo = (chamada) => [
+      ...resumo(chamada),
+      { ...resumo(chamada)[0], id: 'aaaaaaaa-0000-4000-8000-000000000002', codigo: 'TURMA-002' },
+    ]
+    respostas.funcoes = { ...respostas.funcoes, 'admin-alunos': () => ({ aluno_autorizado_id: 'novo-id', conta_criada: false }) }
+    const api = await simularSupabase(page, respostas, PROFESSOR)
+    await page.goto('/admin/alunos')
+
+    await page.getByRole('button', { name: 'Novo aluno' }).click()
+    await page.getByLabel('Nome completo').fill('Bruno Lima')
+    await page.getByLabel('ID do aluno').fill('aluno-0003')
+    await page.getByRole('group', { name: 'Também nestas turmas (opcional)' }).getByRole('checkbox', { name: 'TURMA-002' }).check()
+    await semViolacoesDeAcessibilidade(page)
+    await page.getByRole('button', { name: 'Salvar' }).click()
+
+    await expect(page.getByText('Aluno criado em 2 turmas')).toBeVisible()
+    expect(api.enviadas('admin-alunos')[0].corpo).toMatchObject({ acao: 'criar', turma_id: 'aaaaaaaa-0000-4000-8000-000000000001' })
+    expect(api.enviadas('rpc/matricular_em_turma')[0].corpo).toEqual({
+      p_aluno_autorizado_id: 'novo-id',
+      p_turma_id: 'aaaaaaaa-0000-4000-8000-000000000002',
+    })
+  })
+
   test('alunos: adicionar a outra turma chama a função do banco', async ({ page }) => {
     const cenario = cenarioPadrao({ usuario: PROFESSOR })
     const respostas = respostasDe(cenario)
