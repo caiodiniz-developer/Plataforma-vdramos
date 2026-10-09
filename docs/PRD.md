@@ -393,7 +393,8 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 
 ### F3 — Primeiro acesso (criar conta)
 
-- Entrada (UI): aba "Criar conta" em `/aluno/entrar`: nome completo, ID do aluno, ID da turma, senha, confirmação da senha e aceite do termo de uso (obrigatório).
+- Entrada (UI): aba "Criar conta" em `/aluno/entrar`: nome completo, e-mail (opcional), ID do aluno, ID da turma, senha, confirmação da senha e aceite do termo de uso (obrigatório).
+- Consentimento de comunicações: depois do termo e antes de abrir o portal, a plataforma pergunta uma única vez "Quer receber comunicações do professor?", com o campo de e-mail (opcional; obrigatório só para quem responde que quer). "Quero receber" grava o e-mail de contato e o consentimento `comunicacao_professor = true`; "Agora não" grava `false`. Vale também para aluno criado pelo professor e para quem já tinha conta. A escolha muda em Meus dados.
 - Comportamento: a Edge Function `acesso-aluno` (ação `cadastrar`) normaliza os IDs (trim, upper), exige que o ID esteja na lista do professor (`aluno_autorizado`) e ainda não tenha conta, valida a senha (8 a 72 caracteres, com letras e números), cria o usuário no Supabase Auth, o `perfil`, a `inscricao` e o consentimento `uso_dados_pedagogicos`. O professor também pode criar o aluno já com senha pelo painel (F22); nesse caso o aluno aceita o termo no primeiro acesso.
 - Saída: sessão autenticada; redireciona para `/aluno`.
 
@@ -552,6 +553,50 @@ Views para relatórios (somente admin): `vw_resultado_atividade` (agregado por i
 - `/aluno/conteudos` e `/aluno/conteudos/:id`: lista com busca e filtro; a página do conteúdo registra o acesso.
 - `/aluno/atividades` e `/aluno/questoes`: situação de cada uma, filtro e resposta na própria página.
 - `/aluno/duvidas`, `/aluno/mensagens`, `/aluno/feedback`, `/aluno/avisos`: canal com o professor. Notificações no sino do cabeçalho, em tempo real.
+
+### Ajustes do guia do professor (08/10/2026)
+
+Migration `20261009090000_ajustes_do_professor.sql`; funções `notificar-resposta` e `enviar-aviso`.
+
+### F30 — Aluno em mais de uma turma
+
+- Professor: em Alunos, a ação "Adicionar a outra turma" coloca o aluno em mais uma turma (função `matricular_em_turma`). Com conta, é a mesma conta nas duas: mesmo ID, mesma senha.
+- Aluno: em `/aluno/minhas-turmas` ele vê as turmas de que participa, troca a turma em uso, entra em outra com o ID da turma (`entrar_na_turma`; só turma ativa, e leva a própria matrícula) e sai de uma (`sair_da_turma`; nunca da última, e o que enviou naquela turma é apagado).
+- Casos: ID já usado por outra pessoa na turma de destino é recusado; aluno bloqueado não entra em turma nova.
+
+### F31 — Questões ocultas por padrão e liberação
+
+- Toda questão nasce oculta (status `rascunho`): o botão principal do editor é "Salvar oculta"; "Salvar e liberar" é a opção ao lado.
+- Cada questão tem uma chave "Visível para os alunos". O botão geral "Liberar todas" / "Ocultar todas" alterna a visibilidade de todas as questões que estão na lista (com os filtros aplicados), com confirmação.
+- Função `definir_visibilidade(ids, visivel)`: as que não podem ser liberadas (sem gabarito, por exemplo) ficam ocultas e voltam com o motivo. A turma é notificada só na primeira liberação.
+
+### F32 — Filtros por instituição e por turma
+
+- Em Conteúdos, Atividades e Questões do painel: seletores de instituição e de turma (a instituição reduz a lista de turmas). Item publicado para todas as turmas aparece em qualquer filtro. Regra em `src/dominio/turmas.ts`.
+
+### F33 — Entrega de arquivos e e-mail ao professor
+
+- O professor marca na atividade "O aluno pode enviar arquivos na resposta". O aluno anexa até 5 arquivos (zip ou avulsos), 25 MB cada, que sobem junto com as respostas.
+- Armazenamento: bucket privado `materiais`, em `entregas/<id do usuário>/`; registro em `atividade_entrega` pela função `registrar_entrega` (confere turma, atividade aberta, prazo, pasta e limite). Só o aluno e o professor leem.
+- O professor vê e abre os arquivos em Atividades > Ver respostas.
+- E-mail: ao responder, a função `notificar-resposta` envia ao e-mail do professor as respostas e os arquivos. Assunto: "Turma - Aluno - Atividade". Corpo: detalhes da atividade, respostas e arquivos (em anexo até 8 MB no total; acima disso, link válido por 7 dias). Um e-mail por atividade e aluno.
+
+### F34 — Links em dúvidas, mensagens e avisos
+
+- Endereços `https://…` e trechos `[texto](https://…)` viram links clicáveis (nova aba), quantos houver. O botão "Inserir link" monta o trecho. Só http e https; o restante é mostrado como texto. Regra em `src/dominio/links.ts`, repetida no e-mail.
+
+### F35 — Aviso para várias turmas e por e-mail
+
+- Novo aviso: "Todos os alunos" ou "Escolher turmas", com filtro por instituição e seleção de várias turmas. Um aviso para N turmas vira N linhas com o mesmo `lote_id`; o professor vê e exclui como um aviso só.
+- "Enviar também por e-mail": a função `enviar-aviso` manda o aviso só para alunos das turmas escolhidas com consentimento `comunicacao_professor` vigente e e-mail de contato informado (`vw_emails_comunicacao`). Um e-mail por aluno, sem expor os demais.
+
+### F36 — Navegação do aluno
+
+- "Voltar ao painel" em Aulas presenciais (`/aluno/turmas/:codigo`) e em Meus dados. Meus dados também edita o e-mail de contato; ligar as comunicações exige um e-mail informado.
+
+### E-mail (provedor)
+
+- Gateway único em `supabase/functions/_shared/email.ts` (Resend). Segredos: `RESEND_API_KEY`, `EMAIL_REMETENTE` e, opcional, `EMAIL_DO_PROFESSOR` (destino das respostas; sem ele, vale o e-mail das contas de professor). Sem os segredos, nada é enviado, as telas avisam e o resto funciona.
 
 ## 5. Telas e componentes
 
