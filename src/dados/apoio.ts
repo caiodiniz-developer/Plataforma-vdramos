@@ -1,4 +1,4 @@
-import { ErroDeDados, paraErroDeDados, supabase } from './supabase'
+import { chamarFuncao, ErroDeDados, paraErroDeDados, supabase } from './supabase'
 
 /**
  * Gateway da plataforma de apoio, lado do aluno: conteúdos, atividades,
@@ -53,6 +53,19 @@ export async function turmasDoAluno(): Promise<TurmaDoAluno[]> {
       nome_curso: i.turma!.curso?.nome ?? '',
       inscricao_id: i.id,
     }))
+}
+
+/** Entra em outra turma com o ID da turma. Devolve o id da turma. */
+export async function entrarNaTurma(codigo: string): Promise<string> {
+  const { data, error } = await supabase().rpc('entrar_na_turma', { p_codigo: codigo })
+  if (error) throw paraErroDeDados(error)
+  return data as string
+}
+
+/** Sai de uma turma; o que foi enviado nela é apagado. Não vale para a última. */
+export async function sairDaTurma(turmaId: string): Promise<void> {
+  const { error } = await supabase().rpc('sair_da_turma', { p_turma_id: turmaId })
+  if (error) throw paraErroDeDados(error)
 }
 
 const CAMPOS_CONTEUDO =
@@ -117,6 +130,51 @@ export async function minhasAtividades(turmaId: string): Promise<AtividadeDoAlun
   const { data, error } = await supabase().rpc('minhas_atividades', { p_turma_id: turmaId })
   if (error) throw paraErroDeDados(error)
   return (data ?? []) as AtividadeDoAluno[]
+}
+
+export const ENTREGA_MAXIMA_MB = 25
+export const ENTREGAS_POR_ATIVIDADE = 5
+
+export type Entrega = { id: string; nome_arquivo: string; tamanho_bytes: number; arquivo_path: string; created_at: string }
+
+/** Se a atividade recebe arquivos e o que o aluno já anexou a ela. */
+export async function entregasDaAtividade(atividadeId: string): Promise<{ aceita: boolean; entregas: Entrega[] }> {
+  const [atividade, entregas] = await Promise.all([
+    supabase().from('atividade').select('aceita_arquivo').eq('id', atividadeId).maybeSingle(),
+    supabase().from('atividade_entrega').select('id, nome_arquivo, tamanho_bytes, arquivo_path, created_at').eq('atividade_id', atividadeId).order('created_at'),
+  ])
+  if (atividade.error) throw paraErroDeDados(atividade.error)
+  if (entregas.error) throw paraErroDeDados(entregas.error)
+  return { aceita: atividade.data?.aceita_arquivo === true, entregas: (entregas.data ?? []) as Entrega[] }
+}
+
+/** Envia um arquivo (zip ou avulso) para a pasta do aluno e registra a entrega. */
+export async function enviarEntrega(atividadeId: string, arquivo: File): Promise<void> {
+  if (arquivo.size === 0) throw new ErroDeDados('O arquivo está vazio.', 'arquivo')
+  if (arquivo.size > ENTREGA_MAXIMA_MB * 1024 * 1024) {
+    throw new ErroDeDados(`Cada arquivo pode ter até ${ENTREGA_MAXIMA_MB} MB. Compacte em .zip ou divida.`, 'arquivo')
+  }
+  const { data: sessao } = await supabase().auth.getUser()
+  const extensao = arquivo.name.includes('.') ? arquivo.name.split('.').pop()!.toLowerCase().replace(/[^a-z0-9]/g, '') : 'bin'
+  const caminho = `entregas/${sessao.user?.id}/${crypto.randomUUID()}.${extensao || 'bin'}`
+  const { error: erroEnvio } = await supabase().storage.from('materiais').upload(caminho, arquivo)
+  if (erroEnvio) throw new ErroDeDados('Não foi possível enviar o arquivo. Tente de novo.', 'arquivo')
+
+  const { error } = await supabase().rpc('registrar_entrega', {
+    p_atividade_id: atividadeId,
+    p_arquivo_path: caminho,
+    p_nome_arquivo: arquivo.name.slice(0, 200),
+    p_tamanho_bytes: arquivo.size,
+  })
+  if (error) throw paraErroDeDados(error)
+}
+
+/**
+ * Pede o envio das respostas (e arquivos) ao e-mail do professor. É um extra:
+ * a resposta já está gravada, então falha aqui não é mostrada ao aluno.
+ */
+export async function avisarProfessorDaResposta(atividadeId: string): Promise<void> {
+  await chamarFuncao('notificar-resposta', { atividade_id: atividadeId }).catch(() => {})
 }
 
 export type Progresso = {
