@@ -190,14 +190,34 @@ export async function listarAlunos(): Promise<AlunoDoProfessor[]> {
   return (data ?? []) as AlunoDoProfessor[]
 }
 
-export async function criarAluno(dados: { turmaId: string; matricula: string; nome: string; senha: string }): Promise<void> {
-  await chamarFuncao('admin-alunos', {
+/**
+ * Cria o aluno na turma principal e, se houver, já o coloca nas outras turmas
+ * escolhidas. Devolve as turmas extras em que a matrícula não entrou (o aluno
+ * já está criado; o professor tenta de novo por "Adicionar a outra turma").
+ */
+export async function criarAluno(dados: {
+  turmaId: string
+  matricula: string
+  nome: string
+  senha: string
+  outrasTurmas?: string[]
+}): Promise<{ falharam: string[] }> {
+  const criado = await chamarFuncao<{ aluno_autorizado_id: string }>('admin-alunos', {
     acao: 'criar',
     turma_id: dados.turmaId,
     matricula: dados.matricula,
     nome: dados.nome,
     senha: dados.senha,
   })
+  const falharam: string[] = []
+  for (const turmaId of dados.outrasTurmas ?? []) {
+    try {
+      await matricularEmTurma(criado.aluno_autorizado_id, turmaId)
+    } catch {
+      falharam.push(turmaId)
+    }
+  }
+  return { falharam }
 }
 
 export async function redefinirSenha(alunoAutorizadoId: string, senha: string): Promise<void> {
