@@ -42,3 +42,11 @@ verify_jwt = true
 # Confere a sessao e o papel admin dentro da funcao.
 [functions.admin-alunos]
 verify_jwt = true
+
+# Conferem a sessao dentro da funcao: `notificar-resposta` aceita o aluno que
+# respondeu; `enviar-aviso`, so o professor.
+[functions.notificar-resposta]
+verify_jwt = true
+
+[functions.enviar-aviso]
+verify_jwt = true
