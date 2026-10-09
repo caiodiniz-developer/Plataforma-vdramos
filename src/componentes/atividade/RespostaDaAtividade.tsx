@@ -1,9 +1,10 @@
-import { CheckIcon, Loader2Icon, PaperclipIcon, XIcon } from 'lucide-react'
+import { CheckIcon, Loader2Icon, PaperclipIcon, UploadIcon, XIcon } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -12,7 +13,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { Markdown } from '@/componentes/Markdown'
-import { urlAssinada } from '@/dados/apoio'
+import {
+  avisarProfessorDaResposta,
+  ENTREGA_MAXIMA_MB,
+  ENTREGAS_POR_ATIVIDADE,
+  entregasDaAtividade,
+  enviarEntrega,
+  urlAssinada,
+  type Entrega,
+} from '@/dados/apoio'
 import {
   buscarAtividade,
   responderAtividade,
@@ -20,6 +29,7 @@ import {
   type RespostaDoItem,
 } from '@/dados/sala'
 import { ROTULO_TIPO_ATIVIDADE, segundosRestantes } from '@/dominio/atividade'
+import { problemaDosArquivos, tamanhoLegivel } from '@/dominio/entrega'
 import { percentual } from '@/dominio/relatorio'
 import { useConsulta } from '@/hooks/useConsulta'
 
@@ -197,13 +207,97 @@ function ResultadoDoItem({ item }: { item: ItemParaAluno }) {
 }
 
 /**
+ * Arquivos da resposta, quando a atividade aceita: o que já foi enviado e,
+ * enquanto a atividade está aberta, a escolha de novos (zip ou avulsos).
+ * Os arquivos escolhidos sobem junto com o envio das respostas.
+ */
+function ArquivosDaResposta({
+  enviados,
+  escolhidos,
+  aoEscolher,
+  travado,
+}: {
+  enviados: Entrega[]
+  escolhidos: File[]
+  aoEscolher: (arquivos: File[]) => void
+  travado: boolean
+}) {
+  const id = useId()
+  const restam = ENTREGAS_POR_ATIVIDADE - enviados.length
+
+  async function abrir(caminho: string) {
+    try {
+      window.open(await urlAssinada(caminho), '_blank', 'noopener,noreferrer')
+    } catch (falha) {
+      toast.error((falha as Error).message)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-2 p-4">
+      <p className="flex items-center gap-2 font-bold">
+        <UploadIcon aria-hidden="true" className="size-4" />
+        Arquivos da resposta
+      </p>
+
+      {enviados.length > 0 && (
+        <ul aria-label="Arquivos enviados" className="flex flex-col gap-1">
+          {enviados.map((e) => (
+            <li key={e.id} className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="link" size="sm" className="px-0" onClick={() => void abrir(e.arquivo_path)}>
+                <PaperclipIcon aria-hidden="true" />
+                {e.nome_arquivo}
+              </Button>
+              <span className="font-mono text-[11px] text-muted-foreground">{tamanhoLegivel(e.tamanho_bytes)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {travado ? (
+        enviados.length === 0 && <p className="text-[13px] text-muted-foreground">Nenhum arquivo foi enviado.</p>
+      ) : restam <= 0 ? (
+        <p className="text-[13px] text-muted-foreground">Você já enviou o limite de {ENTREGAS_POR_ATIVIDADE} arquivos.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`${id}-arquivos`}>Anexar arquivos (opcional)</Label>
+          <Input
+            id={`${id}-arquivos`}
+            type="file"
+            multiple
+            aria-describedby={`${id}-ajuda`}
+            onChange={(e) => aoEscolher(Array.from(e.target.files ?? []))}
+          />
+          <p id={`${id}-ajuda`} className="text-xs text-muted-foreground">
+            Até {restam} {restam === 1 ? 'arquivo' : 'arquivos'}, {ENTREGA_MAXIMA_MB} MB cada. Para vários arquivos, prefira um .zip.
+          </p>
+          {escolhidos.length > 0 && (
+            <ul aria-label="Arquivos escolhidos" className="flex flex-col gap-1 text-[13px]">
+              {escolhidos.map((a) => (
+                <li key={`${a.name}-${a.size}`} className="flex flex-wrap items-center gap-2">
+                  <PaperclipIcon aria-hidden="true" className="size-3.5" />
+                  {a.name}
+                  <span className="font-mono text-[11px] text-muted-foreground">{tamanhoLegivel(a.size)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
  * PRD F13: responde uma atividade publicada. Valida os obrigatórios no
  * cliente, envia tudo numa transação e mostra a correção e o resultado
  * conforme `mostrar_resultado`.
  */
 export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId: string; aoResponder?: () => void }) {
   const { dados: atividade, carregando, erro, recarregar } = useConsulta(() => buscarAtividade(atividadeId), [atividadeId])
+  const arquivos = useConsulta(() => entregasDaAtividade(atividadeId), [atividadeId])
   const [rascunho, setRascunho] = useState<Record<string, Rascunho>>({})
+  const [escolhidos, setEscolhidos] = useState<File[]>([])
   const [enviando, setEnviando] = useState(false)
   const [falha, setFalha] = useState<string | null>(null)
   const restante = useContagem(atividade?.publicada_em ?? null, atividade?.tempo_limite_s ?? null)
@@ -234,13 +328,28 @@ export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId:
       }
       if (resposta) respostas.push(resposta)
     }
+    const jaEnviados = arquivos.dados?.entregas.length ?? 0
+    const problema = problemaDosArquivos(escolhidos, jaEnviados, { maximoMb: ENTREGA_MAXIMA_MB, porAtividade: ENTREGAS_POR_ATIVIDADE })
+    if (problema) {
+      setFalha(problema)
+      return
+    }
     setEnviando(true)
     setFalha(null)
     try {
+      // Os arquivos sobem primeiro: se um falhar, a resposta ainda não foi
+      // enviada e o aluno pode tentar de novo sem perder nada.
+      for (const arquivo of escolhidos) await enviarEntrega(atividade.id, arquivo)
+      setEscolhidos([])
       await responderAtividade(atividade.id, respostas)
+      // Extra silencioso: manda as respostas para o e-mail do professor.
+      void avisarProfessorDaResposta(atividade.id)
       recarregar()
+      arquivos.recarregar()
       aoResponder?.()
     } catch (e) {
+      // O que já subiu fica registrado: a lista mostra para não reenviar.
+      arquivos.recarregar()
       setFalha((e as Error).message)
     } finally {
       setEnviando(false)
@@ -318,6 +427,9 @@ export function RespostaDaAtividade({ atividadeId, aoResponder }: { atividadeId:
           {enviando && <Loader2Icon className="animate-spin" aria-hidden="true" />}
           Enviar respostas
         </Button>
+      )}
+      {arquivos.dados?.aceita && (
+        <ArquivosDaResposta enviados={arquivos.dados.entregas} escolhidos={escolhidos} aoEscolher={setEscolhidos} travado={travado} />
       )}
       {atividade.respondida && !atividade.mostra_resultado && (
         <p className="text-[13px] text-muted-foreground">Respostas enviadas. O resultado da turma aparece depois.</p>
