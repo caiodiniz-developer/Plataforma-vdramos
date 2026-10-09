@@ -5,17 +5,20 @@ import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { Conversa } from '@/componentes/plataforma/Conversa'
-import { TextoComLinks } from '@/componentes/plataforma/Links'
+import { comLink, InserirLink, TextoComLinks } from '@/componentes/plataforma/Links'
 import { assinarMudancas, ROTULO_TIPO_FEEDBACK } from '@/dados/apoio'
 import {
+  enviarAvisoPorEmail,
   excluirAviso,
   listarConversas,
   listarFeedbacks,
@@ -30,11 +33,11 @@ import {
 } from '@/dados/professor'
 import { contem } from '@/dominio/busca'
 import { formatarDataHora } from '@/dominio/tempo'
+import { instituicoesDe, TODAS, turmasDaInstituicao } from '@/dominio/turmas'
 import { useConsulta } from '@/hooks/useConsulta'
 import { cn } from '@/lib/utils'
 
 const FUSO = 'America/Sao_Paulo'
-const TODAS = 'todas'
 
 // ---------------------------------------------------------------------------
 // Mensagens privadas
@@ -237,29 +240,75 @@ export function Feedbacks() {
 // Avisos
 // ---------------------------------------------------------------------------
 
+type TurmaDoAviso = { id: string; codigo: string; instituicao: string }
+
 async function carregarAvisos() {
   const [avisos, turmas] = await Promise.all([listarTodosOsAvisos(), listarTurmas()])
   return { avisos, turmas }
 }
 
-function NovoAviso({ turmas, aoFechar }: { turmas: { id: string; codigo: string }[]; aoFechar: (feito: boolean) => void }) {
+function NovoAviso({ turmas, aoFechar }: { turmas: TurmaDoAviso[]; aoFechar: (feito: boolean) => void }) {
   const id = useId()
-  const [turma, setTurma] = useState(TODAS)
+  const [paraTodos, setParaTodos] = useState(true)
+  const [instituicao, setInstituicao] = useState(TODAS)
+  const [escolhidas, setEscolhidas] = useState<Set<string>>(new Set())
   const [titulo, setTitulo] = useState('')
   const [texto, setTexto] = useState('')
+  const [porEmail, setPorEmail] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+
+  const daInstituicao = turmasDaInstituicao(turmas, instituicao)
+  const todasMarcadas = daInstituicao.length > 0 && daInstituicao.every((t) => escolhidas.has(t.id))
+
+  function marcar(turmaId: string, marcada: boolean) {
+    setEscolhidas((atuais) => {
+      const novas = new Set(atuais)
+      if (marcada) novas.add(turmaId)
+      else novas.delete(turmaId)
+      return novas
+    })
+  }
+
+  function marcarTodas(marcadas: boolean) {
+    setEscolhidas((atuais) => {
+      const novas = new Set(atuais)
+      for (const t of daInstituicao) {
+        if (marcadas) novas.add(t.id)
+        else novas.delete(t.id)
+      }
+      return novas
+    })
+  }
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault()
     if (enviando) return
+    if (!paraTodos && escolhidas.size === 0) return setErro('Escolha ao menos uma turma.')
     if (titulo.trim().length < 3) return setErro('Dê um título ao aviso.')
     if (texto.trim().length < 3) return setErro('Escreva o aviso.')
     setEnviando(true)
     setErro(null)
     try {
-      await publicarAviso({ turma_id: turma === TODAS ? null : turma, titulo, texto })
-      toast.success('Aviso publicado', { description: 'Os alunos recebem uma notificação.' })
+      const lote = await publicarAviso({ turmaIds: paraTodos ? [] : [...escolhidas], titulo, texto })
+      toast.success('Aviso publicado', { description: 'Os alunos recebem uma notificação na plataforma.' })
+      if (porEmail) {
+        // O aviso já está publicado: falha no e-mail é avisada, mas não desfaz.
+        try {
+          const envio = await enviarAvisoPorEmail(lote)
+          if (!envio.configurado) {
+            toast.warning('E-mail ainda não configurado', {
+              description: `O aviso foi publicado só na plataforma. ${envio.destinatarios} ${envio.destinatarios === 1 ? 'aluno receberia' : 'alunos receberiam'} por e-mail.`,
+            })
+          } else if (envio.destinatarios === 0) {
+            toast.info('Nenhum aluno para receber por e-mail', { description: 'Ninguém destas turmas autorizou comunicações e informou e-mail.' })
+          } else {
+            toast.success(`E-mail enviado para ${envio.enviados} de ${envio.destinatarios} ${envio.destinatarios === 1 ? 'aluno' : 'alunos'}`)
+          }
+        } catch (falha) {
+          toast.error('O aviso foi publicado, mas o e-mail não saiu', { description: (falha as Error).message })
+        }
+      }
       aoFechar(true)
     } catch (falha) {
       setErro((falha as Error).message)
@@ -270,28 +319,67 @@ function NovoAviso({ turmas, aoFechar }: { turmas: { id: string; codigo: string 
 
   return (
     <Dialog open onOpenChange={(aberto) => !aberto && aoFechar(false)}>
-      <DialogContent className="plataforma sm:max-w-[520px]">
+      <DialogContent className="max-h-[92vh] min-h-0 overflow-y-auto sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="font-mono text-[22px] font-bold">Novo aviso</DialogTitle>
           <DialogDescription>O aviso aparece no painel dos alunos e gera uma notificação.</DialogDescription>
         </DialogHeader>
         <form onSubmit={aoEnviar} noValidate className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${id}-turma`}>Para quem</Label>
-            <Select value={turma} onValueChange={setTurma}>
-              <SelectTrigger id={`${id}-turma`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TODAS}>Todos os alunos</SelectItem>
-                {turmas.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    Turma {t.codigo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <fieldset className="flex flex-col gap-3">
+            <legend className="mb-2 text-sm font-semibold">Para quem</legend>
+            <RadioGroup value={paraTodos ? 'todos' : 'turmas'} onValueChange={(v) => setParaTodos(v === 'todos')} className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="todos" id={`${id}-todos`} />
+                <Label htmlFor={`${id}-todos`}>Todos os alunos</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="turmas" id={`${id}-turmas`} />
+                <Label htmlFor={`${id}-turmas`}>Escolher turmas</Label>
+              </div>
+            </RadioGroup>
+
+            {!paraTodos && (
+              <div className="flex flex-col gap-3 border-2 p-3">
+                <Select value={instituicao} onValueChange={setInstituicao}>
+                  <SelectTrigger aria-label="Filtrar turmas por instituição">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TODAS}>Todas as instituições</SelectItem>
+                    {instituicoesDe(turmas).map((nome) => (
+                      <SelectItem key={nome} value={nome}>
+                        {nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {daInstituicao.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma turma nesta instituição.</p>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 border-b border-divisor pb-2">
+                      <Checkbox id={`${id}-marcar-todas`} checked={todasMarcadas} onCheckedChange={(v) => marcarTodas(v === true)} />
+                      <Label htmlFor={`${id}-marcar-todas`}>Marcar todas da lista</Label>
+                    </div>
+                    <ul className="grid max-h-[180px] gap-2 overflow-y-auto sm:grid-cols-2">
+                      {daInstituicao.map((t) => (
+                        <li key={t.id} className="flex items-center gap-2">
+                          <Checkbox id={`${id}-t-${t.id}`} checked={escolhidas.has(t.id)} onCheckedChange={(v) => marcar(t.id, v === true)} />
+                          <Label htmlFor={`${id}-t-${t.id}`} className="font-mono text-[13px] font-normal">
+                            {t.codigo}
+                          </Label>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  <span className="destaque text-foreground">{escolhidas.size}</span> {escolhidas.size === 1 ? 'turma escolhida' : 'turmas escolhidas'}
+                </p>
+              </div>
+            )}
+          </fieldset>
+
           <div className="flex flex-col gap-2">
             <Label htmlFor={`${id}-titulo`}>Título</Label>
             <Input id={`${id}-titulo`} maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)} />
@@ -299,7 +387,22 @@ function NovoAviso({ turmas, aoFechar }: { turmas: { id: string; codigo: string 
           <div className="flex flex-col gap-2">
             <Label htmlFor={`${id}-texto`}>Aviso</Label>
             <Textarea id={`${id}-texto`} rows={5} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} />
+            <div className="flex flex-wrap items-center gap-2">
+              <InserirLink aoInserir={(trecho) => setTexto((atual) => comLink(atual, trecho))} />
+              <span className="text-xs text-muted-foreground">Endereços que começam com https:// também viram link.</span>
+            </div>
           </div>
+
+          <div className="flex items-start gap-3 border-2 p-3">
+            <Checkbox id={`${id}-email`} checked={porEmail} onCheckedChange={(v) => setPorEmail(v === true)} className="mt-0.5" />
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${id}-email`}>Enviar também por e-mail</Label>
+              <p className="text-xs text-muted-foreground">
+                Só recebe quem autorizou comunicações do professor e informou um e-mail. Cada aluno recebe o seu, sem ver os demais.
+              </p>
+            </div>
+          </div>
+
           {erro && (
             <p role="alert" className="text-[13px] font-semibold text-destructive">
               {erro}
@@ -320,7 +423,7 @@ function NovoAviso({ turmas, aoFechar }: { turmas: { id: string; codigo: string 
   )
 }
 
-/** Avisos do professor para todos os alunos ou para uma turma. */
+/** Avisos do professor para todos os alunos ou para as turmas escolhidas. */
 export function Avisos() {
   const consulta = useConsulta(carregarAvisos, [])
   const [novo, setNovo] = useState(false)
@@ -328,7 +431,7 @@ export function Avisos() {
 
   return (
     <>
-      <CabecalhoDaPagina rotulo="Comunicação" titulo="Avisos" descricao="Comunicados para todos os alunos ou para uma turma.">
+      <CabecalhoDaPagina rotulo="Comunicação" titulo="Avisos" descricao="Comunicados para todos os alunos ou para as turmas que você escolher.">
         <Button onClick={() => setNovo(true)}>
           <PlusIcon aria-hidden="true" />
           Novo aviso
@@ -349,12 +452,20 @@ export function Avisos() {
               ) : (
                 <ul className="flex flex-col gap-4">
                   {avisos.map((a) => (
-                    <li key={a.id}>
+                    <li key={a.lote_id}>
                       <Card>
                         <CardContent className="flex flex-wrap items-start gap-4">
                           <div className="flex min-w-[min(100%,280px)] flex-1 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant="outline">{a.turma_id ? `Turma ${codigoDaTurma.get(a.turma_id) ?? ''}` : 'Todos os alunos'}</Badge>
+                              {a.para_todos ? (
+                                <Badge variant="outline">Todos os alunos</Badge>
+                              ) : (
+                                a.turma_ids.map((turmaId) => (
+                                  <Badge key={turmaId} variant="outline">
+                                    Turma {codigoDaTurma.get(turmaId) ?? ''}
+                                  </Badge>
+                                ))
+                              )}
                               <span className="font-mono text-xs text-muted-foreground">{formatarDataHora(a.created_at, FUSO)}</span>
                             </div>
                             <h2 className="text-[19px]">{a.titulo}</h2>
@@ -367,10 +478,10 @@ export function Avisos() {
                             onClick={() =>
                               setConfirmacao({
                                 titulo: `Excluir "${a.titulo}"?`,
-                                texto: 'O aviso some do painel dos alunos. Esta ação não pode ser desfeita.',
+                                texto: 'O aviso some do painel dos alunos de todas as turmas para as quais foi enviado. Esta ação não pode ser desfeita.',
                                 acao: 'Excluir',
                                 destrutiva: true,
-                                executar: () => excluirAviso(a.id),
+                                executar: () => excluirAviso(a.lote_id),
                                 sucesso: 'Aviso excluído',
                               })
                             }
