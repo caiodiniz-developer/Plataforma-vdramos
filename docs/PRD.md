@@ -782,7 +782,7 @@ Migration `20261009090000_ajustes_do_professor.sql`; funções `notificar-respos
 
 ## 8. Fora de escopo (nesta fase)
 
-- Envio de e-mails em massa ou newsletters pelo sistema (fase 1 só exporta a lista de quem consentiu). O sistema não envia e-mail transacional: a entrada do aluno é por senha e a recuperação é feita pelo professor.
+- Newsletters e campanhas de e-mail. Os únicos e-mails que o sistema envia são as respostas de atividade para o professor e os avisos para os alunos que consentiram (F33 e F35). Não há e-mail de recuperação de senha: a entrada do aluno é por senha e quem redefine é o professor.
 - Vídeo, áudio ou transmissão da aula dentro do app (a aula acontece presencialmente ou em ferramenta externa; `encontro.local` guarda o link).
 - Notas, frequência e diário de classe oficiais da instituição.
 - Gamificação (pontos, ranking, medalhas) e placar público de quiz.
