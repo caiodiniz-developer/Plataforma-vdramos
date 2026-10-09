@@ -2,7 +2,10 @@ import {
   ClipboardListIcon,
   ClockIcon,
   ListChecksIcon,
+  EyeIcon,
+  EyeOffIcon,
   Loader2Icon,
+  PaperclipIcon,
   PencilIcon,
   PlusIcon,
   SearchXIcon,
@@ -20,12 +23,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
+import { FiltroDeTurmas } from '@/componentes/admin/FiltroDeTurmas'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
-import type { Conteudo } from '@/dados/apoio'
+import { urlAssinada, type Conteudo } from '@/dados/apoio'
 import {
+  definirVisibilidade,
   encerrarAtividade,
+  entregasDaAtividade,
   excluirAtividade,
   listarAtividades,
   listarTodosOsConteudos,
@@ -40,12 +47,15 @@ import {
 import { problemasDaAtividade, ROTULO_STATUS_ATIVIDADE, type TipoResposta } from '@/dominio/atividade'
 import { contem } from '@/dominio/busca'
 import { formatarDataHora } from '@/dominio/tempo'
+import { passaNoFiltro, SEM_FILTRO } from '@/dominio/turmas'
 import { useConsulta } from '@/hooks/useConsulta'
 import { paraCampoDeData, paraInstante } from './datas'
 
 const FUSO = 'America/Sao_Paulo'
 const NENHUM = 'nenhum'
 const ROTULO_DIFICULDADE = { facil: 'Fácil', medio: 'Médio', dificil: 'Difícil' } as const
+// Para o professor, a questão está oculta ou visível para os alunos.
+const ROTULO_DA_QUESTAO = { rascunho: 'Oculta', publicada: 'Visível', encerrada: 'Encerrada' } as const
 const ROTULO_RESPOSTA: Partial<Record<TipoResposta, string>> = {
   texto_livre: 'Resposta em texto',
   escolha_unica: 'Uma alternativa',
@@ -54,7 +64,7 @@ const ROTULO_RESPOSTA: Partial<Record<TipoResposta, string>> = {
 
 type Modo = 'atividades' | 'questoes'
 type Filtro = 'todas' | 'rascunho' | 'publicada' | 'encerrada'
-type TurmaSimples = { id: string; codigo: string }
+type TurmaSimples = { id: string; codigo: string; instituicao: string }
 
 const ehEscolha = (tipo: TipoResposta) => tipo === 'escolha_unica' || tipo === 'escolha_multipla'
 
@@ -245,6 +255,7 @@ function EditorDaAtividade({
     categoria: atividade?.categoria ?? '',
     conteudo_id: atividade?.conteudo_id ?? null,
     arquivo: null,
+    aceita_arquivo: atividade?.aceita_arquivo ?? false,
     itens: atividade && atividade.itens.length > 0 ? atividade.itens : [itemNovo(ehQuestao ? 'escolha_unica' : 'texto_livre')],
   })
   const [problemas, setProblemas] = useState<string[]>([])
@@ -265,8 +276,12 @@ function EditorDaAtividade({
     try {
       const atividadeId = await salvarAtividade(dados, atividade ?? undefined)
       if (publicar) await publicarAtividade(atividadeId)
-      toast.success(publicar ? (ehQuestao ? 'Questão publicada' : 'Atividade publicada') : 'Alterações salvas', {
-        description: publicar ? 'Os alunos da turma recebem uma notificação.' : undefined,
+      toast.success(publicar ? (ehQuestao ? 'Questão liberada' : 'Atividade publicada') : ehQuestao && rascunho ? 'Questão salva (oculta)' : 'Alterações salvas', {
+        description: publicar
+          ? 'Os alunos da turma recebem uma notificação.'
+          : ehQuestao && rascunho
+            ? 'Os alunos só veem depois que você liberar.'
+            : undefined,
       })
       aoFechar(true)
     } catch (falha) {
@@ -292,7 +307,7 @@ function EditorDaAtividade({
             {travado
               ? 'Já existem respostas: dá para ajustar os dados gerais, mas os itens ficam travados.'
               : ehQuestao
-                ? 'O aluno responde e vê na hora se acertou, com a sua explicação.'
+                ? 'A questão nasce oculta: os alunos só veem depois que você liberar. Aí respondem e veem na hora se acertaram.'
                 : 'Uma lição com perguntas abertas ou um quiz com correção automática.'}
           </DialogDescription>
         </DialogHeader>
@@ -368,6 +383,23 @@ function EditorDaAtividade({
                 </div>
               </div>
             </>
+          )}
+
+          {!ehQuestao && (
+            <div className="flex items-start gap-3 border-2 p-3">
+              <Checkbox
+                id={`${id}-aceita`}
+                checked={dados.aceita_arquivo}
+                onCheckedChange={(v) => mudar({ aceita_arquivo: v === true })}
+                className="mt-0.5"
+              />
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`${id}-aceita`}>O aluno pode enviar arquivos na resposta</Label>
+                <p className="text-xs text-muted-foreground">
+                  Até 5 arquivos por aluno (zip ou avulsos), 25 MB cada. Eles aparecem em Ver respostas e vão para o seu e-mail.
+                </p>
+              </div>
+            </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -455,11 +487,18 @@ function EditorDaAtividade({
             <Button type="button" variant="outline" onClick={() => aoFechar(false)}>
               Cancelar
             </Button>
-            <Button type="submit" variant={rascunho ? 'secondary' : 'default'} disabled={enviando !== null}>
+            {/* Questão: o caminho principal é salvar oculta; liberar é a escolha extra. */}
+            {rascunho && ehQuestao && (
+              <Button type="button" variant="outline" disabled={enviando !== null} onClick={() => void salvar(true)}>
+                {enviando === 'publicar' && <Loader2Icon className="animate-spin" aria-hidden="true" />}
+                Salvar e liberar
+              </Button>
+            )}
+            <Button type="submit" variant={rascunho && !ehQuestao ? 'secondary' : 'default'} disabled={enviando !== null}>
               {enviando === 'salvar' && <Loader2Icon className="animate-spin" aria-hidden="true" />}
-              {rascunho ? 'Salvar rascunho' : 'Salvar'}
+              {!rascunho ? 'Salvar' : ehQuestao ? 'Salvar oculta' : 'Salvar rascunho'}
             </Button>
-            {rascunho && (
+            {rascunho && !ehQuestao && (
               <Button type="button" disabled={enviando !== null} onClick={() => void salvar(true)}>
                 {enviando === 'publicar' && <Loader2Icon className="animate-spin" aria-hidden="true" />}
                 Salvar e publicar
@@ -474,7 +513,21 @@ function EditorDaAtividade({
 
 /** Respostas recebidas, agrupadas por aluno. */
 function RespostasRecebidas({ atividade, aoFechar }: { atividade: AtividadeDoProfessor; aoFechar: () => void }) {
-  const consulta = useConsulta(() => respostasDaAtividade(atividade.id), [atividade.id])
+  const consulta = useConsulta(
+    async () => {
+      const [respostas, entregas] = await Promise.all([respostasDaAtividade(atividade.id), entregasDaAtividade(atividade.id)])
+      return { respostas, entregas }
+    },
+    [atividade.id],
+  )
+
+  async function abrir(caminho: string) {
+    try {
+      window.open(await urlAssinada(caminho), '_blank', 'noopener,noreferrer')
+    } catch (falha) {
+      toast.error((falha as Error).message)
+    }
+  }
 
   return (
     <Dialog open onOpenChange={(aberto) => !aberto && aoFechar()}>
@@ -484,14 +537,18 @@ function RespostasRecebidas({ atividade, aoFechar }: { atividade: AtividadeDoPro
           <DialogDescription>{atividade.titulo}</DialogDescription>
         </DialogHeader>
         <Carregado consulta={consulta}>
-          {(respostas) => {
-            if (respostas.length === 0) return <Vazio icone={UsersIcon} titulo="Ninguém respondeu ainda" />
+          {({ respostas, entregas }) => {
+            if (respostas.length === 0 && entregas.length === 0) return <Vazio icone={UsersIcon} titulo="Ninguém respondeu ainda" />
             const porAluno = new Map<string, typeof respostas>()
             for (const r of respostas) porAluno.set(r.aluno, [...(porAluno.get(r.aluno) ?? []), r])
+            // Quem só mandou arquivo também entra na lista.
+            for (const e of entregas) if (!porAluno.has(e.aluno)) porAluno.set(e.aluno, [])
             return (
               <ul className="flex flex-col gap-4">
                 {[...porAluno.entries()].map(([aluno, linhas]) => {
                   const corrigidas = linhas.filter((l) => l.correta !== null)
+                  const arquivos = entregas.filter((e) => e.aluno === aluno)
+                  const quando = linhas[0]?.created_at ?? arquivos[0]?.created_at
                   return (
                     <li key={aluno} className="flex flex-col gap-2 border-2 p-4">
                       <div className="flex flex-wrap items-center gap-2">
@@ -501,7 +558,7 @@ function RespostasRecebidas({ atividade, aoFechar }: { atividade: AtividadeDoPro
                             {corrigidas.filter((l) => l.correta).length}/{corrigidas.length} acertos
                           </Badge>
                         )}
-                        <span className="ml-auto font-mono text-[11px] text-muted-foreground">{formatarDataHora(linhas[0].created_at, FUSO)}</span>
+                        {quando && <span className="ml-auto font-mono text-[11px] text-muted-foreground">{formatarDataHora(quando, FUSO)}</span>}
                       </div>
                       <ol className="flex flex-col gap-2">
                         {linhas.map((l) => (
@@ -516,6 +573,21 @@ function RespostasRecebidas({ atividade, aoFechar }: { atividade: AtividadeDoPro
                           </li>
                         ))}
                       </ol>
+                      {arquivos.length > 0 && (
+                        <ul aria-label={`Arquivos de ${aluno}`} className="flex flex-col gap-1 border-t border-divisor pt-2">
+                          {arquivos.map((e) => (
+                            <li key={e.id}>
+                              <Button type="button" variant="link" size="sm" className="px-0" onClick={() => void abrir(e.arquivo_path)}>
+                                <PaperclipIcon aria-hidden="true" />
+                                {e.nome_arquivo}
+                              </Button>
+                              <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                                {Math.max(1, Math.round(e.tamanho_bytes / 1024))} KB
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   )
                 })}
@@ -533,6 +605,8 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
   const consulta = useConsulta(() => carregar(modo), [modo])
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todas')
+  const [porTurma, setPorTurma] = useState(SEM_FILTRO)
+  const [mudando, setMudando] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ atividade: AtividadeDoProfessor | null } | null>(null)
   const [respostas, setRespostas] = useState<AtividadeDoProfessor | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
@@ -548,6 +622,44 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
     }
   }
 
+  /** Liga ou desliga a visibilidade de uma questão para os alunos. */
+  async function alternar(a: AtividadeDoProfessor, visivel: boolean) {
+    if (mudando) return
+    setMudando(a.id)
+    try {
+      const { puladas } = await definirVisibilidade([a.id], visivel)
+      if (puladas.length > 0) toast.error('Não deu para liberar', { description: puladas[0].motivo })
+      else toast.success(visivel ? 'Questão liberada para os alunos' : 'Questão oculta')
+      consulta.recarregar()
+    } catch (falha) {
+      toast.error((falha as Error).message)
+    } finally {
+      setMudando(null)
+    }
+  }
+
+  /** Botão geral: libera todas as da lista; se todas já estão visíveis, oculta todas. */
+  function pedirTodas(lista: AtividadeDoProfessor[]) {
+    const liberar = lista.some((a) => a.status !== 'publicada')
+    const ids = lista.filter((a) => (liberar ? a.status !== 'publicada' : a.status === 'publicada')).map((a) => a.id)
+    setConfirmacao({
+      titulo: liberar ? `Liberar ${ids.length} ${ids.length === 1 ? 'questão' : 'questões'}?` : `Ocultar ${ids.length} ${ids.length === 1 ? 'questão' : 'questões'}?`,
+      texto: liberar
+        ? 'Os alunos das turmas passam a ver e a responder. Vale para as questões que estão na lista agora (com os filtros aplicados).'
+        : 'Os alunos deixam de ver estas questões. As respostas já enviadas continuam guardadas.',
+      acao: liberar ? 'Liberar todas' : 'Ocultar todas',
+      executar: async () => {
+        const { alteradas, puladas } = await definirVisibilidade(ids, liberar)
+        if (puladas.length > 0) {
+          toast.warning(`${alteradas} ${alteradas === 1 ? 'liberada' : 'liberadas'}, ${puladas.length} sem gabarito`, {
+            description: `Ficaram ocultas: ${puladas.map((p) => p.titulo).join(', ')}.`,
+          })
+        }
+      },
+      sucesso: liberar ? 'Questões liberadas' : 'Questões ocultas',
+    })
+  }
+
   return (
     <>
       <CabecalhoDaPagina
@@ -555,7 +667,7 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
         titulo={ehQuestao ? 'Questões' : 'Atividades'}
         descricao={
           ehQuestao
-            ? 'Questões de múltipla escolha com gabarito e explicação.'
+            ? 'Questões de múltipla escolha com gabarito e explicação. Toda questão nasce oculta; você libera uma a uma ou todas de uma vez.'
             : 'Lições e quizzes para a turma, com prazo opcional. Você vê as respostas de cada aluno.'
         }
       >
@@ -570,8 +682,12 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
         {({ atividades, turmas, conteudos }) => {
           const codigoDaTurma = new Map(turmas.map((t) => [t.id, t.codigo]))
           const visiveis = atividades.filter(
-            (a) => (filtro === 'todas' || a.status === filtro) && contem(busca, a.titulo, a.descricao, a.categoria, a.itens[0]?.enunciado),
+            (a) =>
+              (filtro === 'todas' || a.status === filtro) &&
+              passaNoFiltro(a.turma_id, porTurma, turmas) &&
+              contem(busca, a.titulo, a.descricao, a.categoria, a.itens[0]?.enunciado),
           )
+          const todasVisiveis = visiveis.length > 0 && visiveis.every((a) => a.status === 'publicada')
 
           return (
             <>
@@ -581,11 +697,20 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
                 aoMudar={setFiltro}
                 opcoes={[
                   ['todas', 'Todas'],
-                  ['rascunho', 'Rascunhos'],
-                  ['publicada', 'Publicadas'],
+                  ['rascunho', ehQuestao ? 'Ocultas' : 'Rascunhos'],
+                  ['publicada', ehQuestao ? 'Visíveis' : 'Publicadas'],
                   ['encerrada', 'Encerradas'],
                 ]}
               />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <FiltroDeTurmas turmas={turmas} valor={porTurma} aoMudar={setPorTurma} />
+                {ehQuestao && visiveis.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => pedirTodas(visiveis)}>
+                    {todasVisiveis ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+                    {todasVisiveis ? 'Ocultar todas' : 'Liberar todas'}
+                  </Button>
+                )}
+              </div>
 
               {atividades.length === 0 ? (
                 <Vazio
@@ -608,8 +733,9 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
                           <div className="flex min-w-[min(100%,280px)] flex-1 flex-col gap-2">
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant={a.status === 'publicada' ? 'green' : a.status === 'encerrada' ? 'neutro' : 'outline'}>
-                                {ROTULO_STATUS_ATIVIDADE[a.status]}
+                                {ehQuestao ? ROTULO_DA_QUESTAO[a.status] : ROTULO_STATUS_ATIVIDADE[a.status]}
                               </Badge>
+                              {a.aceita_arquivo && <Badge variant="outline">Recebe arquivos</Badge>}
                               {!ehQuestao && <Badge variant="outline">{a.tipo === 'quiz' ? 'Quiz' : 'Lição'}</Badge>}
                               {a.categoria && <Badge variant="outline">{a.categoria}</Badge>}
                               {a.dificuldade && <Badge variant="neutro">{ROTULO_DIFICULDADE[a.dificuldade]}</Badge>}
@@ -637,12 +763,23 @@ function ListaDoProfessor({ modo }: { modo: Modo }) {
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-1">
-                            {a.status === 'rascunho' && (
+                            {ehQuestao && (
+                              <label className="mr-2 flex cursor-pointer items-center gap-2 text-sm font-semibold">
+                                <Switch
+                                  checked={a.status === 'publicada'}
+                                  disabled={mudando !== null}
+                                  onCheckedChange={(v) => void alternar(a, v)}
+                                  aria-label={`${a.titulo}: visível para os alunos`}
+                                />
+                                {a.status === 'publicada' ? 'Visível' : 'Oculta'}
+                              </label>
+                            )}
+                            {!ehQuestao && a.status === 'rascunho' && (
                               <Button size="sm" onClick={() => void publicar(a)}>
                                 Publicar
                               </Button>
                             )}
-                            {a.status === 'publicada' && (
+                            {!ehQuestao && a.status === 'publicada' && (
                               <Button
                                 size="sm"
                                 variant="outline"
