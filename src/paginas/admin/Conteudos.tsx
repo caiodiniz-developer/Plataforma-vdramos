@@ -11,11 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Busca, CabecalhoDaPagina, Carregado, FiltroDeLista, Vazio } from '@/componentes/plataforma/Blocos'
+import { FiltroDeTurmas } from '@/componentes/admin/FiltroDeTurmas'
 import { Confirmar, type Confirmacao } from '@/componentes/plataforma/Confirmar'
 import { ROTULO_TIPO_CONTEUDO, urlAssinada, type Conteudo, type TipoConteudo } from '@/dados/apoio'
 import { excluirConteudo, listarTodosOsConteudos, listarTurmas, salvarConteudo, type DadosDoConteudo } from '@/dados/professor'
 import { contem } from '@/dominio/busca'
 import { formatarDataHora } from '@/dominio/tempo'
+import { passaNoFiltro, SEM_FILTRO } from '@/dominio/turmas'
 import { useConsulta } from '@/hooks/useConsulta'
 import { paraCampoDeData, paraInstante } from './datas'
 
@@ -219,6 +221,7 @@ export default function Conteudos() {
   const consulta = useConsulta(carregar, [])
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [porTurma, setPorTurma] = useState(SEM_FILTRO)
   const [formulario, setFormulario] = useState<{ conteudo: Conteudo | null } | null>(null)
   const [confirmacao, setConfirmacao] = useState<Confirmacao | null>(null)
   const [agora] = useState(() => Date.now())
@@ -261,7 +264,9 @@ export default function Conteudos() {
       <Carregado consulta={consulta}>
         {({ conteudos, turmas }) => {
           const codigoDaTurma = new Map(turmas.map((t) => [t.id, t.codigo]))
-          const visiveis = conteudos.filter((c) => noFiltro(c, filtro) && contem(busca, c.titulo, c.descricao))
+          const visiveis = conteudos.filter(
+            (c) => noFiltro(c, filtro) && passaNoFiltro(c.turma_id, porTurma, turmas) && contem(busca, c.titulo, c.descricao),
+          )
 
           return (
             <>
@@ -276,6 +281,7 @@ export default function Conteudos() {
                   ['materiais', 'Materiais'],
                 ]}
               />
+              <FiltroDeTurmas turmas={turmas} valor={porTurma} aoMudar={setPorTurma} />
 
               {conteudos.length === 0 ? (
                 <Vazio icone={BookOpenIcon} titulo="Nenhum conteúdo ainda" texto="Publique uma aula extra, um texto, um vídeo ou um arquivo para a turma.">
