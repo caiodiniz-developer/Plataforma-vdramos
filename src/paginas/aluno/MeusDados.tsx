@@ -1,6 +1,6 @@
-import { DownloadIcon, Loader2Icon } from 'lucide-react'
-import { useId, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { ArrowLeftIcon, DownloadIcon, Loader2Icon } from 'lucide-react'
+import { useId, useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -16,18 +16,74 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { EstadoDeErro } from '@/componentes/EstadoDeErro'
 import { useSessao } from '@/contextos/Sessao'
-import { buscarMeusDados, excluirConta, exportarMeusDados, registrarConsentimento } from '@/dados/meus-dados'
-import { concedeu, consentimentoVigente, ROTULO_FINALIDADE } from '@/dominio/consentimento'
+import { buscarMeusDados, excluirConta, exportarMeusDados, registrarConsentimento, salvarEmailDeContato } from '@/dados/meus-dados'
+import { concedeu, consentimentoVigente, emailValido, ROTULO_FINALIDADE } from '@/dominio/consentimento'
 import { formatarDataHora } from '@/dominio/tempo'
 import { useConsulta } from '@/hooks/useConsulta'
 
 const FUSO_PADRAO = 'America/Sao_Paulo'
+
+/** E-mail de contato do aluno: opcional, usado só para comunicações autorizadas. */
+function EmailDeContato({ atual, aoSalvar }: { atual: string | null; aoSalvar: () => void }) {
+  const id = useId()
+  const [email, setEmail] = useState(atual ?? '')
+  const [erro, setErro] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const mudou = email.trim().toLowerCase() !== (atual ?? '')
+
+  async function salvar(evento: FormEvent) {
+    evento.preventDefault()
+    if (salvando || !mudou) return
+    if (email.trim() !== '' && !emailValido(email)) return setErro('Confira o e-mail informado.')
+    setSalvando(true)
+    setErro(null)
+    try {
+      await salvarEmailDeContato(email)
+      toast.success(email.trim() === '' ? 'E-mail de contato removido' : 'E-mail de contato salvo')
+      aoSalvar()
+    } catch (falha) {
+      setErro((falha as Error).message)
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <form onSubmit={salvar} noValidate className="mt-4 flex flex-col gap-2 border-t border-divisor pt-4">
+      <Label htmlFor={`${id}-email`}>E-mail de contato (opcional)</Label>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          id={`${id}-email`}
+          type="email"
+          autoComplete="email"
+          placeholder="voce@exemplo.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="sm:max-w-[320px]"
+        />
+        <Button type="submit" size="sm" variant="outline" disabled={salvando || !mudou}>
+          {salvando && <Loader2Icon className="animate-spin" aria-hidden="true" />}
+          Salvar e-mail
+        </Button>
+      </div>
+      {erro && (
+        <p role="alert" className="text-[13px] font-semibold text-destructive">
+          {erro}
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Usado só para as comunicações do professor que você autorizar abaixo. Não é o seu login.
+      </p>
+    </form>
+  )
+}
 
 const ROTULO_ORIGEM = { cadastro: 'Cadastro', area_aluno: 'Área do aluno', admin: 'Professor' } as const
 
@@ -48,7 +104,6 @@ function Cartao({ titulo, descricao, children }: { titulo: string; descricao?: s
 /** PRD F8: perfil, turmas, consentimentos e ações de privacidade do aluno. */
 export default function MeusDados() {
   const id = useId()
-  const navegar = useNavigate()
   const { encerrar } = useSessao()
   const { dados, carregando, erro, recarregar } = useConsulta(buscarMeusDados, [])
   const [salvando, setSalvando] = useState(false)
@@ -57,6 +112,11 @@ export default function MeusDados() {
 
   async function alterarComunicacao(ligado: boolean) {
     if (salvando) return
+    // Sem e-mail não há para onde enviar: pede o e-mail antes de ligar.
+    if (ligado && !dados?.perfil.email_contato) {
+      toast.error('Informe um e-mail de contato primeiro', { description: 'O campo fica no cartão Perfil, logo acima.' })
+      return
+    }
     setSalvando(true)
     try {
       await registrarConsentimento('comunicacao_professor', ligado)
@@ -111,8 +171,11 @@ export default function MeusDados() {
           <Link to="/" className="font-mono text-lg font-bold tracking-[-0.02em]">
             Vitor Ramos
           </Link>
-          <Button size="sm" variant="link" onClick={() => navegar(-1)}>
-            Voltar
+          <Button asChild size="sm" variant="outline">
+            <Link to="/aluno">
+              <ArrowLeftIcon aria-hidden="true" />
+              Voltar ao painel
+            </Link>
           </Button>
         </div>
       </header>
@@ -149,6 +212,7 @@ export default function MeusDados() {
                   </div>
                 )}
               </dl>
+              <EmailDeContato atual={dados.perfil.email_contato} aoSalvar={recarregar} />
               <p className="mt-4 text-xs text-muted-foreground">Para corrigir o nome ou trocar a senha, fale com o professor.</p>
             </Cartao>
 
