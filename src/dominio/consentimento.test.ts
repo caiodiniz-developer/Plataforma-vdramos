@@ -5,6 +5,8 @@ import {
   consentimentosDoCadastro,
   precisaAceitarTermo,
   type Consentimento,
+  emailValido,
+  precisaResponderComunicacao,
 } from './consentimento'
 
 function registro(parcial: Partial<Consentimento>): Consentimento {
@@ -61,5 +63,32 @@ describe('consentimentosDoCadastro', () => {
     expect(termo).toMatchObject({ finalidade: 'uso_dados_pedagogicos', concedido: true, origem: 'cadastro' })
     expect(comunicacao).toMatchObject({ finalidade: 'comunicacao_professor', concedido: false })
     expect(consentimentosDoCadastro(true)[1].concedido).toBe(true)
+  })
+})
+
+describe('pergunta sobre comunicações', () => {
+  const registro = (finalidade: 'comunicacao_professor' | 'uso_dados_pedagogicos', concedido: boolean) => ({
+    finalidade,
+    concedido,
+    versao_termo: '2026-10-v1',
+    origem: 'area_aluno' as const,
+    created_at: '2026-10-08T12:00:00Z',
+  })
+
+  it('aparece enquanto o aluno não respondeu, mesmo com o termo aceito', () => {
+    expect(precisaResponderComunicacao([])).toBe(true)
+    expect(precisaResponderComunicacao([registro('uso_dados_pedagogicos', true)])).toBe(true)
+  })
+
+  it('não volta depois de respondida, com sim ou com não', () => {
+    expect(precisaResponderComunicacao([registro('comunicacao_professor', true)])).toBe(false)
+    expect(precisaResponderComunicacao([registro('comunicacao_professor', false)])).toBe(false)
+  })
+
+  it('confere o formato do e-mail', () => {
+    expect(emailValido(' ana@empresa.com ')).toBe(true)
+    expect(emailValido('ana@empresa')).toBe(false)
+    expect(emailValido('ana empresa@x.com')).toBe(false)
+    expect(emailValido('')).toBe(false)
   })
 })

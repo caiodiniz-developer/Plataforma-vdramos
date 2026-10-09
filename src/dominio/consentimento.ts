@@ -64,3 +64,17 @@ export function consentimentosDoCadastro(
     },
   ]
 }
+
+/**
+ * O aluno ainda não disse se quer receber comunicações do professor? Enquanto
+ * não houver nenhum registro dessa finalidade, a pergunta aparece antes do
+ * portal. Responder "não" também é uma resposta: não pergunta de novo.
+ */
+export function precisaResponderComunicacao(historico: Consentimento[]): boolean {
+  return !historico.some((c) => c.finalidade === 'comunicacao_professor')
+}
+
+/** E-mail com formato aceitável (o mesmo critério do banco). */
+export function emailValido(email: string): boolean {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
+}
