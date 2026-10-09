@@ -2,6 +2,7 @@ import {
   BellIcon,
   BookOpenIcon,
   CalendarDaysIcon,
+  GraduationCapIcon,
   CircleHelpIcon,
   ClipboardListIcon,
   HouseIcon,
@@ -54,6 +55,17 @@ export function useTurmaAtual(): TurmaDoAluno {
   return turma
 }
 
+type TurmasDoLayout = { turmas: TurmaDoAluno[]; atual: TurmaDoAluno; trocar: (codigo: string) => void; recarregar: () => void }
+const ContextoDasTurmas = createContext<TurmasDoLayout | null>(null)
+
+/** Todas as turmas do aluno, a atual e como trocar. Só existe dentro de `LayoutAluno`. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useTurmasDoAluno(): TurmasDoLayout {
+  const valor = useContext(ContextoDasTurmas)
+  if (!valor) throw new Error('useTurmasDoAluno precisa estar dentro de LayoutAluno')
+  return valor
+}
+
 type Item = { rotulo: string; para: string; icone: LucideIcon; fim?: boolean }
 type Grupo = { titulo: string; itens: Item[] }
 
@@ -81,6 +93,7 @@ function gruposDe(turma: TurmaDoAluno): Grupo[] {
       titulo: 'Turma',
       itens: [
         { rotulo: 'Aulas presenciais', para: `/aluno/turmas/${turma.codigo}`, icone: CalendarDaysIcon },
+        { rotulo: 'Minhas turmas', para: '/aluno/minhas-turmas', icone: GraduationCapIcon },
         { rotulo: 'Meus dados', para: '/aluno/meus-dados', icone: ShieldIcon },
       ],
     },
@@ -273,6 +286,7 @@ export function LayoutAluno() {
           )
 
           return (
+            <ContextoDasTurmas.Provider value={{ turmas, atual: turma, trocar: trocarTurma, recarregar: consulta.recarregar }}>
             <ContextoDaTurma.Provider value={turma}>
               <div className="flex min-h-svh flex-col md:flex-row">
                 <aside className="sticky top-0 hidden h-svh w-[272px] shrink-0 flex-col gap-6 overflow-y-auto bg-tinta px-4 py-6 text-papel md:flex">
@@ -333,6 +347,7 @@ export function LayoutAluno() {
                 </div>
               </div>
             </ContextoDaTurma.Provider>
+            </ContextoDasTurmas.Provider>
           )
         }}
       </Carregado>
