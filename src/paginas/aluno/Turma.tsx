@@ -1,4 +1,4 @@
-import { RadioIcon } from 'lucide-react'
+import { ArrowLeftIcon, RadioIcon } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -57,6 +57,12 @@ function Cabecalho({ turma, turmas }: { turma: DadosDaTurma; turmas: { codigo: s
               </SelectContent>
             </Select>
           )}
+          <Button asChild size="sm" variant="outline">
+            <Link to="/aluno">
+              <ArrowLeftIcon aria-hidden="true" />
+              Voltar ao painel
+            </Link>
+          </Button>
           <Button asChild size="sm" variant="ghost">
             <Link to="/aluno/meus-dados">Meus dados</Link>
           </Button>
