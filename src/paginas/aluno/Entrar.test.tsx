@@ -103,7 +103,26 @@ describe('Criar conta (aluno)', () => {
     expect(await screen.findByText('Painel do aluno')).toBeTruthy()
     expect(cadastrar).toHaveBeenCalledWith(
       { matricula: 'aluno-002', codigoTurma: 'turma-001' },
-      { nome: 'João Silva', senha: BOA, aceiteTermo: true },
+      { nome: 'João Silva', senha: BOA, aceiteTermo: true, email: '' },
+    )
+  })
+
+  it('o e-mail é opcional: quando informado vai junto, e formato errado é barrado', async () => {
+    cadastrar.mockResolvedValue('TURMA-001')
+    abrir()
+    await preencher()
+    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.type(screen.getByLabelText('E-mail (opcional)'), 'joao@')
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(screen.getByText('Confira o e-mail ou deixe o campo em branco.')).toBeTruthy()
+    expect(cadastrar).not.toHaveBeenCalled()
+
+    await userEvent.type(screen.getByLabelText('E-mail (opcional)'), 'empresa.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
+    expect(await screen.findByText('Painel do aluno')).toBeTruthy()
+    expect(cadastrar).toHaveBeenCalledWith(
+      { matricula: 'aluno-002', codigoTurma: 'turma-001' },
+      { nome: 'João Silva', senha: BOA, aceiteTermo: true, email: 'joao@empresa.com' },
     )
   })
 

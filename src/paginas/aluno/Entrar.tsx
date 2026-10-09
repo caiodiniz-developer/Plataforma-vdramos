@@ -107,6 +107,7 @@ const CADASTRO_VAZIO: CadastroDeAluno = {
   senha: '',
   confirmacao: '',
   aceiteTermo: false,
+  email: '',
 }
 
 /**
@@ -161,7 +162,7 @@ export default function Entrar() {
     void executar(() =>
       cadastrar(
         { matricula: cadastro.matricula, codigoTurma: cadastro.codigoTurma },
-        { nome: cadastro.nome, senha: cadastro.senha, aceiteTermo: cadastro.aceiteTermo },
+        { nome: cadastro.nome, senha: cadastro.senha, aceiteTermo: cadastro.aceiteTermo, email: cadastro.email ?? '' },
       ),
     )
   }
@@ -284,6 +285,22 @@ export default function Entrar() {
                       onChange={(e) => alterarCadastro('nome', e.target.value)}
                     />
                     <ErroDoCampo id={`${id}-c-nome-erro`} mensagem={errosDoCadastro.nome} />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={`${id}-c-email`}>E-mail (opcional)</Label>
+                    <Input
+                      {...campo('email')}
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="voce@exemplo.com"
+                      value={cadastro.email ?? ''}
+                      onChange={(e) => alterarCadastro('email', e.target.value)}
+                    />
+                    <ErroDoCampo id={`${id}-c-email-erro`} mensagem={errosDoCadastro.email} />
+                    <p className="text-xs text-muted-foreground">
+                      Só para receber avisos do professor, se você autorizar na próxima tela. Você entra sempre com ID, turma e senha.
+                    </p>
                   </div>
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="flex flex-col gap-2">
