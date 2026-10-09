@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { formatarDataHora } from '@/dominio/tempo'
+import { comLink, InserirLink, TextoComLinks } from './Links'
 import { cn } from '@/lib/utils'
 
 export type MensagemDaConversa = { id: string; autor: 'aluno' | 'professor'; texto: string; created_at: string }
@@ -70,14 +71,11 @@ export function Conversa({ mensagens, eu, nomeDoOutro, aoEnviar, vazio }: Props)
                 </span>
                 <div className={cn('flex min-w-0 flex-col gap-1', minha ? 'items-end' : 'items-start')}>
                   <span className="eyebrow text-[10px] text-muted-foreground">{minha ? 'Você' : nomeDoOutro}</span>
-                  <p
-                    className={cn(
-                      'border-2 px-3 py-2 text-[15px] break-words whitespace-pre-wrap',
-                      minha ? 'border-primary bg-primary text-primary-foreground' : 'border-divisor bg-muted',
-                    )}
-                  >
-                    {m.texto}
-                  </p>
+                  <TextoComLinks
+                    texto={m.texto}
+                    claro={minha}
+                    className={cn('border-2 px-3 py-2 text-[15px]', minha ? 'border-primary bg-primary text-primary-foreground' : 'border-divisor bg-muted')}
+                  />
                   <span className="font-mono text-[11px] text-muted-foreground">{formatarDataHora(m.created_at, 'America/Sao_Paulo')}</span>
                 </div>
               </li>
@@ -104,10 +102,13 @@ export function Conversa({ mensagens, eu, nomeDoOutro, aoEnviar, vazio }: Props)
             {erro}
           </p>
         )}
-        <Button type="submit" disabled={enviando || texto.trim() === ''} className="self-end">
-          {enviando ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : <SendIcon aria-hidden="true" />}
-          Enviar
-        </Button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <InserirLink aoInserir={(trecho) => setTexto((atual) => comLink(atual, trecho))} />
+          <Button type="submit" disabled={enviando || texto.trim() === ''}>
+            {enviando ? <Loader2Icon className="animate-spin" aria-hidden="true" /> : <SendIcon aria-hidden="true" />}
+            Enviar
+          </Button>
+        </div>
       </form>
     </div>
   )
