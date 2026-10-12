@@ -7,7 +7,8 @@
 <!--
   Brand Style Guide Vitor Ramos v2.0 — retrato do que o projeto usa hoje.
   Fontes de verdade: src/index.css (tokens e utilitários), src/lib/movimento.ts,
-  src/lib/rolagem.ts, src/lib/interacoes.ts, src/components/ui/* e docs/PRD.md (seção 9).
+  src/lib/rolagem.ts, src/lib/interacoes.ts, src/components/ui/*,
+  src/componentes/plataforma/* (Blocos, LayoutAluno, Conversa, Links) e docs/PRD.md (seção 9).
   Mudou algum desses arquivos? Atualize este guia no mesmo PR.
   As fontes ficam em ./fontes (cópia dos pacotes @fontsource usados pelo app).
 -->
@@ -160,6 +161,30 @@ td:first-child { white-space: nowrap; }
 .filtro span.ativo { border-color: var(--tinta); background: #fff; color: var(--tinta); }
 .esqueleto { height: 20px; background: var(--muted); border-radius: var(--radius); animation: pulsar 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 @keyframes pulsar { 50% { opacity: .5; } }
+.lateral { background: var(--tinta); color: var(--papel); padding: 16px; display: flex; flex-direction: column; gap: 4px; font: 600 14px var(--font-plataforma); }
+.lateral .turma { border: 2px solid rgba(244, 242, 238, .3); margin-bottom: 12px; }
+.lateral .turma div:last-child { padding: 10px 12px; }
+.lateral .item { min-height: 40px; display: flex; align-items: center; padding: 0 12px; border-left: 4px solid transparent; }
+.lateral .item.ativo { background: var(--papel); color: var(--tinta); border-left-color: var(--principal); }
+.lateral .item:not(.ativo):hover { background: rgba(244, 242, 238, .1); border-left-color: rgba(244, 242, 238, .4); }
+.conversa { display: flex; flex-direction: column; gap: 14px; padding: 16px; font-family: var(--font-plataforma); }
+.conversa .fala { display: flex; gap: 8px; align-items: flex-start; max-width: 88%; }
+.conversa .fala.minha { flex-direction: row-reverse; align-self: flex-end; }
+.conversa .avatar { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; font: 700 12px var(--font-mono); background: var(--tinta); color: var(--papel); }
+.conversa .minha .avatar { background: var(--principal); color: #fff; }
+.conversa .balao { border: 2px solid var(--neutro-escuro); background: var(--papel); padding: 8px 12px; font-size: 15px; }
+.conversa .minha .balao { border-color: var(--principal); background: var(--principal); color: #fff; }
+.conversa .balao a { font-weight: 600; }
+.tipo-conteudo { overflow: hidden; }
+.tipo-conteudo .topo-cor { height: 72px; display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 14px; border-bottom: 2px solid var(--tinta); }
+.tipo-conteudo .topo-cor b { font: 700 26px/1 var(--font-mono); transition: transform .3s; }
+.tipo-conteudo:hover .topo-cor b { transform: translateY(-4px) scale(1.1); }
+.tipo-conteudo { transition: transform .2s; }
+.tipo-conteudo:hover { transform: translateY(-4px); }
+.tipo-conteudo p { padding: 12px 14px; font: 13px var(--font-plataforma); color: var(--neutro-claro); }
+.progresso { height: 12px; border: 2px solid rgba(244, 242, 238, .6); }
+.progresso div { height: 100%; background: var(--principal); transform-origin: left; }
+.aviso-lateral { border-left: 8px solid var(--accent-green); }
 .regua-encontro { display: flex; height: 28px; border: 2px solid var(--tinta); }
 .regua-encontro span { border-right: 2px solid var(--tinta); }
 .regua-encontro span:last-child { border-right: 0; }
@@ -454,6 +479,69 @@ ul.regras li::before { content: ''; position: absolute; left: 0; top: 21px; widt
     <div class="caixa" style="padding:18px; display:flex; flex-direction:column; gap:12px;"><span class="eyebrow apagado">Carregando</span><div class="esqueleto"></div><div class="esqueleto" style="width:70%"></div></div>
   </div>
   <p class="nota" style="margin-top:14px;">Toda lista da plataforma tem os três estados: carregando (esqueleto), erro com "Tentar de novo" e vazio com ícone e texto.</p>
+
+  <div class="eyebrow apagado sub">Área do aluno: barra lateral e painel de abertura</div>
+  <div class="grade g2">
+    <div class="lateral" aria-hidden="true">
+      <div class="turma"><div class="faixa"><span style="background:var(--principal)"></span><span style="background:var(--accent-orange)"></span><span style="background:var(--accent-violet)"></span><span style="background:var(--accent-green)"></span></div><div><span class="eyebrow" style="font-size:10px; color:rgba(244,242,238,.7)">Turma</span><div class="destaque" style="font-size:18px;">TURMA-001</div></div></div>
+      <span class="eyebrow" style="font-size:10px; color:rgba(244,242,238,.7); padding:0 12px 4px;">Estudo</span>
+      <span class="item ativo">Início</span><span class="item">Conteúdos</span><span class="item">Atividades</span>
+    </div>
+    <div class="escuro" style="display:flex; flex-direction:column;">
+      <div style="padding:20px; display:flex; flex-direction:column; gap:10px; flex:1;">
+        <span class="eyebrow" style="color:rgba(244,242,238,.8)">Progresso geral</span>
+        <span class="destaque" style="font-size:56px; line-height:1;">75<span style="font-size:28px;">%</span></span>
+        <div class="progresso" data-demo="progresso"><div data-barra style="width:75%"></div></div>
+        <span class="inter" style="font-size:12px; color:rgba(244,242,238,.8)">Título em Ubuntu Mono 34 → 48 px, número em 64 → 84 px.</span>
+      </div>
+      <div class="faixa"><span style="background:var(--principal)"></span><span style="background:var(--accent-orange)"></span><span style="background:var(--accent-violet)"></span><span style="background:var(--accent-green)"></span></div>
+    </div>
+  </div>
+  <p class="nota" style="margin-top:14px;">A barra lateral do aluno é em Tinta, com 272 px, menu em grupos (Estudo, Professor, Turma) e a faixa das quatro cores sobre a turma. Item ativo: fundo Papel, texto Tinta e filete azul de 4 px à esquerda. O painel do professor usa barra lateral branca, com o item ativo em Tinta. Avatar: quadrado de 44 px em Tinta com as iniciais em Ubuntu Mono.</p>
+
+  <div class="eyebrow apagado sub">Cor por seção da área do aluno</div>
+  <div class="rolavel"><table>
+    <tr><th>Cor</th><th>Seções</th></tr>
+    <tr><td><span class="chip" style="background:var(--principal)"></span>Azul</td><td>Atividades, Minhas turmas, atalho "Enviar dúvida"</td></tr>
+    <tr><td><span class="chip" style="background:var(--accent-orange)"></span>Laranja</td><td>Questões, Minhas dúvidas</td></tr>
+    <tr><td><span class="chip" style="background:var(--accent-violet-tint); border-color:var(--accent-violet)"></span>Roxo tingido</td><td>Conteúdos, Mensagens</td></tr>
+    <tr><td><span class="chip" style="background:var(--accent-green)"></span>Verde</td><td>Feedback, Avisos (cartão com filete verde de 8 px à esquerda)</td></tr>
+  </table></div>
+
+  <div class="eyebrow apagado sub">Cor por tipo de conteúdo</div>
+  <div class="grade g4">
+    <div class="caixa tipo-conteudo"><div class="topo-cor" style="background:var(--principal); color:#fff"><span class="eyebrow">Aula</span><b>Aa</b></div><p>Azul, texto branco</p></div>
+    <div class="caixa tipo-conteudo"><div class="topo-cor" style="background:var(--accent-orange)"><span class="eyebrow">Aula extra</span><b>Aa</b></div><p>Laranja, texto Tinta</p></div>
+    <div class="caixa tipo-conteudo"><div class="topo-cor escuro"><span class="eyebrow">Texto</span><b>Aa</b></div><p>Tinta, texto Papel</p></div>
+    <div class="caixa tipo-conteudo"><div class="topo-cor" style="background:var(--accent-violet-tint)"><span class="eyebrow">Vídeo · Link</span><b>Aa</b></div><p>Roxo tingido, texto Tinta</p></div>
+    <div class="caixa tipo-conteudo"><div class="topo-cor" style="background:var(--accent-green)"><span class="eyebrow">Arquivo</span><b>Aa</b></div><p>Verde, texto Tinta</p></div>
+  </div>
+
+  <div class="eyebrow apagado sub">Cor por status</div>
+  <div class="rolavel"><table>
+    <tr><th>Badge</th><th>Significa</th></tr>
+    <tr><td><span class="badge verde">Concluída</span></td><td>Feito ou no ar: Concluída, Respondida, Acertou, Correta, Ativo, Publicado, Visível</td></tr>
+    <tr><td><span class="badge laranja">Pendente</span></td><td>Pede atenção: dúvida pendente (professor), aluno Bloqueado, Errou</td></tr>
+    <tr><td><span class="badge contorno">Pendente</span></td><td>Estado neutro em aberto: atividade Pendente (aluno), questão Oculta, categoria, turma</td></tr>
+    <tr><td><span class="badge neutro">Encerrada</span></td><td>Fora de uso: Rascunho, Encerrada, Arquivada, Sem conta, dificuldade</td></tr>
+    <tr><td><span class="badge roxo">Agendado</span></td><td>Programado para depois; resposta anônima</td></tr>
+    <tr><td><span class="badge azul">Novo</span></td><td>Novidade ou seleção atual: Novo, Em uso, contador de não lidas</td></tr>
+    <tr><td><span class="badge perigo">Erro</span></td><td>Só erro. Excluir e remover usam o botão destrutivo, sempre com confirmação.</td></tr>
+  </table></div>
+
+  <div class="eyebrow apagado sub">Conversa e links no texto</div>
+  <div class="grade g2">
+    <div class="caixa conversa">
+      <div class="fala"><span class="avatar">P</span><div><span class="eyebrow apagado" style="font-size:10px;">Professor</span><div class="balao">Veja o material em <a href="#componentes">abrir o material</a>.</div></div></div>
+      <div class="fala minha"><span class="avatar">V</span><div style="text-align:right;"><span class="eyebrow apagado" style="font-size:10px;">Você</span><div class="balao">Obrigado, professor.</div></div></div>
+    </div>
+    <div class="caixa card">
+      <span class="eyebrow apagado">Regras</span>
+      <p class="inter">Quem escreve fica à direita, em azul com texto branco; o outro lado, à esquerda, em Papel com borda fina. Avatar de 36 px com a inicial.</p>
+      <p class="inter">Em dúvidas, mensagens e avisos, endereços <code>https://…</code> e trechos <code>[texto](https://…)</code> viram links sublinhados em peso 600, que abrem em nova aba. Só http e https; o resto aparece como texto.</p>
+      <p class="inter">Avisos (toasts) saem no canto inferior direito, em cartão com borda de 2 px.</p>
+    </div>
+  </div>
 </section>
 
 <!-- 05 MOVIMENTO -->
@@ -510,9 +598,19 @@ ul.regras li::before { content: ''; position: absolute; left: 0; top: 21px; widt
     <div class="caixa demo" style="min-height:0;">
       <span class="eyebrow">Hover de cartão e seta</span>
       <div class="palco"><div class="caixa numero" style="--cor:var(--principal); padding-bottom:12px;"><span class="destaque" style="font-size:22px;">Sobe 2 px</span></div></div>
-      <div class="ficha">Cartão de número: translateY -2 px · 200 ms<br>Setas de link: deslocam 4–12 px · 300 ms<br>Botões: troca de cor · 150 ms</div>
+      <div class="ficha">Cartão de número e atalho: translateY -2 px · 200 ms<br>Cartão de conteúdo: -4 px · 200 ms; ícone sobe e cresce 1,1 · 300 ms<br>Setas de link: deslocam 4–12 px · 300 ms<br>Botões: troca de cor · 150 ms</div>
     </div>
   </div>
+
+  <div class="eyebrow apagado sub">Movimento da plataforma</div>
+  <div class="rolavel"><table>
+    <tr><th>Peça</th><th>Movimento</th></tr>
+    <tr><td>Entrada de página</td><td><code>.surgir</code>: cada bloco sobe 14 px em 0,5 s, com 0,05 s de atraso entre eles (até 0,2 s). Também na tela de entrada do aluno.</td></tr>
+    <tr><td>Barra de progresso geral</td><td>A largura vai ao valor em 700 ms.</td></tr>
+    <tr><td>Carregando</td><td>Esqueleto pulsando (opacidade 1 → 0,5, 2 s) e ícone girando nos botões enquanto a ação roda.</td></tr>
+    <tr><td>Diálogos, menus e avisos</td><td>Animações padrão do shadcn/ui (aparecer e leve zoom, 200 ms).</td></tr>
+    <tr><td>Tempo real</td><td>Notificações, conversas e respostas de dúvidas entram na lista sem animação, para não deslocar o que a pessoa está lendo.</td></tr>
+  </table></div>
 
   <div class="eyebrow apagado sub">Faixa de temas</div>
   <div class="trilho-fora" aria-hidden="true"><div class="trilho">
@@ -601,6 +699,7 @@ ul.regras li::before { content: ''; position: absolute; left: 0; top: 21px; widt
     <li>Entraram os tons derivados (cartão, apoio, erro, roxo tingido), o tema escuro e o mapa para o shadcn/ui.</li>
     <li>Entrou a Inter e o fundo branco da plataforma (decisão de 07/10/2026).</li>
     <li>Entraram a escala fluida da landing, os utilitários de textura e a seção de movimento.</li>
+    <li>Entraram os padrões da plataforma: barra lateral em Tinta, selo e cor por seção, cor por tipo de conteúdo e por status, conversa em balões e links no texto.</li>
   </ul>
 </section>
 
@@ -662,6 +761,7 @@ const DEMOS = {
     void palco.offsetWidth
     palco.classList.add('surgir')
   },
+  progresso: (d) => tocar(d.querySelector('[data-barra]'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], 700, 'ease'),
   curvas: (d) => d.querySelectorAll('[data-curva]').forEach((b) => {
     const distancia = b.parentElement.clientWidth - b.clientWidth
     b.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${distancia}px)` }], { duration: 1200, easing: b.dataset.curva, fill: 'forwards' })
