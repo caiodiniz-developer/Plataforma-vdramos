@@ -796,7 +796,7 @@ Migration `20261009090000_ajustes_do_professor.sql`; funções `notificar-respos
 
 ## 9. Design tokens e estilo
 
-Fonte: Brand Style Guide Vitor Ramos v1.0. Identidade de contraste alto, tipografia técnica e um acento dominante (azul) com três acentos de suporte. Montar o tema no tweakcn (https://tweakcn.com/) com os valores abaixo.
+Fonte: Brand Style Guide Vitor Ramos (`docs/brand/brand-style-guide.html`). A v1.0 definiu a identidade; a v2.0 (10/2026) documenta o que está implementado: tokens derivados, tema escuro, tema da plataforma, componentes e movimento. Mudou token, fonte ou animação: atualizar o guia no mesmo PR. Identidade de contraste alto, tipografia técnica e um acento dominante (azul) com três acentos de suporte. Montar o tema no tweakcn (https://tweakcn.com/) com os valores abaixo.
 
 ### Cores (tema claro)
 

@@ -12,7 +12,7 @@ Este repositório é **privado** e contém código de um projeto/cliente corpora
   shadcn/ui + Tailwind. UI em pt-BR, fuso padrão `America/Sao_Paulo`.
 - Tabelas e colunas em snake_case, português sem acento; RLS ligado em todas as tabelas.
 - Identidade visual: [`docs/brand/brand-style-guide.html`](docs/brand/brand-style-guide.html)
-  (Brand Style Guide Vitor Ramos v1.0; abrir no navegador). Os tokens e as regras de
+  (Brand Style Guide Vitor Ramos v2.0; abrir no navegador). Os tokens e as regras de
   contraste/acessibilidade estão resumidos na seção 9 do PRD.
 - Mudanças de escopo ou de modelo de dados: atualizar o `docs/PRD.md` no mesmo PR.
 
