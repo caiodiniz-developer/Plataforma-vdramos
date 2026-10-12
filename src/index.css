@@ -1,9 +1,11 @@
 @import 'tailwindcss';
 
 /*
- * Tokens da marca — Brand Style Guide Vitor Ramos v1.0 (PRD, seção 9).
- * Os valores marcados como "derivado" não estão no guia: foram deduzidos da
- * paleta para completar o tema do shadcn/ui e estão registrados no PRD.
+ * Tokens da marca — Brand Style Guide Vitor Ramos v2.0
+ * (docs/brand/brand-style-guide.html; PRD, seção 9). Os valores marcados como
+ * "derivado" não estavam na v1.0: foram deduzidos da paleta para completar o
+ * tema do shadcn/ui e entraram no guia na v2.0. Mudou um token aqui? Atualize
+ * o guia no mesmo commit.
  */
 :root {
   --papel: #f4f2ee;
