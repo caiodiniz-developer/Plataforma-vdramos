@@ -10,13 +10,43 @@ test.describe('landing', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Vitor Ramos' })).toBeVisible()
   })
 
-  test('mostra a frase de apresentação do guia de marca', async ({ page }) => {
-    await expect(page.getByText(/Construindo produtos e educação em dados e inteligência artificial/).first()).toBeVisible()
+  test('mostra a proposta de valor no hero', async ({ page }) => {
+    await expect(page.getByText('A ponte entre a inteligência de negócios e a engenharia de dados em escala.').first()).toBeVisible()
+  })
+
+  test('grandes números, trajetória e como trabalho: conteúdo, abas pelo teclado e fotos em WebP', async ({ page }) => {
+    const numeros = page.locator('#numeros')
+    await numeros.scrollIntoViewIfNeeded()
+    // A contagem termina no valor do briefing.
+    await expect(numeros.locator('[data-conta]')).toHaveText(['15', '50', '2', '7', '3'], { timeout: 10_000 })
+
+    const trajetoria = page.locator('#trajetoria')
+    await trajetoria.getByRole('tab', { name: /Engenharia de dados e liderança técnica/ }).focus()
+    await expect(trajetoria.getByRole('heading', { level: 3, name: 'Senior Data Engineer & Tech Lead' })).toBeVisible()
+    await page.keyboard.press('ArrowDown')
+    await expect(trajetoria.getByRole('tab', { name: /Gestão de negócios/ })).toHaveAttribute('aria-selected', 'true')
+    await expect(trajetoria.getByRole('heading', { level: 3, name: 'Gerente de Desenvolvimento de Negócios' })).toBeVisible()
+    await page.keyboard.press('ArrowDown')
+    await expect(trajetoria.getByText('Escola Korú · The Plumbers · Engenharia de Dados Academy')).toBeVisible()
+
+    const sobre = page.locator('#sobre')
+    await sobre.scrollIntoViewIfNeeded()
+    await expect(sobre.getByRole('link', { name: /Projetos e histórico no GitHub/ })).toHaveAttribute('href', 'https://github.com/admvitorramos')
+    await expect(sobre.getByRole('list', { name: 'Cloud e plataformas' }).getByRole('listitem')).toHaveCount(4)
+
+    // As duas fotos são WebP e carregam de verdade.
+    for (const alt of ['Retrato de Vitor Ramos', 'Vitor Ramos em foto de perfil']) {
+      const foto = page.getByAltText(alt)
+      await foto.scrollIntoViewIfNeeded()
+      await expect(foto).toHaveAttribute('src', /\.webp$/)
+      await expect.poll(() => foto.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0)
   })
 
   test('tem um único h1 e os títulos de seção esperados', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
-    for (const titulo of ['Frentes de trabalho', 'Sala de aula interativa', 'Contato']) {
+    for (const titulo of ['Em números', 'Frentes de trabalho', 'Trajetória', 'Como trabalho', 'Sala de aula interativa', 'Contato']) {
       await expect(page.getByRole('heading', { level: 2, name: titulo })).toBeAttached()
     }
   })
