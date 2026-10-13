@@ -1,6 +1,7 @@
 /**
- * Fotos da landing. Hoje são ILUSTRAÇÕES DE EXEMPLO (em `public/fotos/`),
- * marcadas como "Foto de exemplo". Para trocar por fotos reais:
+ * Fotos da landing. Os retratos são fotos reais do Vitor, em WebP. A galeria
+ * ainda usa ILUSTRAÇÕES DE EXEMPLO (em `public/fotos/`), marcadas como
+ * "Foto de exemplo". Para trocar por fotos reais:
  *
  * 1. Coloque o arquivo em `public/fotos/` (JPG ou WebP, de preferência com
  *    1200 × 900 px nas fotos da galeria e 900 × 1100 px no retrato).
@@ -19,11 +20,20 @@ export type Foto = {
   exemplo: boolean
 }
 
+/** Retrato do hero: recorte com fundo transparente, sobre o azul da marca. */
 export const RETRATO: Foto = {
-  arquivo: '/fotos/retrato-exemplo.svg',
-  alt: 'Retrato de exemplo, a ser substituído pela foto do professor',
+  arquivo: '/fotos/vitor-ramos-retrato.webp',
+  alt: 'Retrato de Vitor Ramos',
   legenda: 'Retrato',
-  exemplo: true,
+  exemplo: false,
+}
+
+/** Retrato da seção "Como trabalho": foto de perfil com fundo. */
+export const RETRATO_SOBRE: Foto = {
+  arquivo: '/fotos/vitor-ramos-sobre.webp',
+  alt: 'Vitor Ramos em foto de perfil',
+  legenda: 'Como trabalho',
+  exemplo: false,
 }
 
 export const GALERIA: Foto[] = [
