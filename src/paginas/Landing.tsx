@@ -5,15 +5,18 @@ import { Abertura } from '@/componentes/landing/Abertura'
 import { Assinatura } from '@/componentes/landing/Assinatura'
 import { Cabecalho, type Ancora } from '@/componentes/landing/Cabecalho'
 import { ChamadaFinal } from '@/componentes/landing/ChamadaFinal'
+import { ComoTrabalho } from '@/componentes/landing/ComoTrabalho'
 import { Contato } from '@/componentes/landing/Contato'
 import { CursorPersonalizado } from '@/componentes/landing/CursorPersonalizado'
 import { Experiencias } from '@/componentes/landing/Experiencias'
 import { FaixaDeTemas } from '@/componentes/landing/FaixaDeTemas'
 import { FrentesDeTrabalho } from '@/componentes/landing/FrentesDeTrabalho'
 import { Galeria } from '@/componentes/landing/Galeria'
+import { GrandesNumeros } from '@/componentes/landing/GrandesNumeros'
 import { Hero } from '@/componentes/landing/Hero'
 import { ProgressoDeLeitura } from '@/componentes/landing/ProgressoDeLeitura'
 import { SalaInterativa } from '@/componentes/landing/SalaInterativa'
+import { Trajetoria } from '@/componentes/landing/Trajetoria'
 import { Rodape } from '@/componentes/Rodape'
 import { Secao } from '@/componentes/Secao'
 import { GALERIA } from '@/conteudo/galeria'
@@ -79,9 +82,11 @@ function useRolagemSuave() {
 }
 
 /**
- * PRD F1: landing pública. Ordem: hero, faixa de temas, frentes de trabalho,
- * experiência, sala de aula interativa, galeria, chamada final, contato e
- * rodapé com a assinatura. As seções alternam Papel, Tinta e azul.
+ * PRD F1: landing pública. Ordem: hero, faixa de temas, grandes números,
+ * frentes de trabalho, trajetória, como trabalho, experiência (só se houver
+ * alguma publicada no banco), sala de aula interativa, galeria, chamada
+ * final, contato e rodapé com a assinatura. As seções alternam Papel, Tinta
+ * e azul.
  */
 export default function Landing() {
   const { dados, carregando, erro, recarregar } = useConsulta(buscarLanding, [])
@@ -94,6 +99,8 @@ export default function Landing() {
   const abas = dados ? abasVisiveis(dados.experiencias) : []
   const ancoras: Ancora[] = [
     { rotulo: 'Frentes', href: '#frentes' },
+    { rotulo: 'Trajetória', href: '#trajetoria' },
+    { rotulo: 'Como trabalho', href: '#sobre' },
     ...(abas.includes('profissional') ? [{ rotulo: 'Experiência', href: '#experiencia' }] : []),
     ...(abas.includes('docencia') ? [{ rotulo: 'Docência', href: '#experiencia' }] : []),
     { rotulo: 'Sala de aula', href: '#sala-de-aula' },
@@ -144,8 +151,15 @@ export default function Landing() {
           <>
             <Hero perfil={dados.perfil} />
             <FaixaDeTemas />
+            <GrandesNumeros />
             <Secao id="frentes" numero={proximo()} titulo="Frentes de trabalho" sangrado>
               <FrentesDeTrabalho aoEscolher={setAssunto} />
+            </Secao>
+            <Secao id="trajetoria" numero={proximo()} titulo="Trajetória">
+              <Trajetoria />
+            </Secao>
+            <Secao id="sobre" numero={proximo()} titulo="Como trabalho">
+              <ComoTrabalho />
             </Secao>
             {abas.length > 0 && (
               <Secao id="experiencia" numero={proximo()} titulo="Experiência">
