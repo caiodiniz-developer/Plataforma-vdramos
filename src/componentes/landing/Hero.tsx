@@ -213,14 +213,18 @@ export function Hero({ perfil }: Props) {
             className="relative w-full max-w-[320px] self-end perspective-[900px] lg:col-span-3 lg:col-start-10 lg:max-w-none"
           >
             <div data-inclina>
-              <div data-moldura className="relative overflow-hidden border-2 bg-secondary">
+              {/* O retrato é um recorte sem fundo: o azul da marca aparece atrás dele. */}
+              <div data-moldura className="relative overflow-hidden border-2 bg-primary">
                 <img
                   data-retrato
                   src={retrato}
                   alt={foto ? `Foto de ${perfil.nome_exibicao}` : RETRATO.alt}
-                  width={900}
-                  height={1100}
-                  className="aspect-9/11 w-full object-cover"
+                  width={1000}
+                  height={1000}
+                  // Está na primeira dobra: carrega junto com a página, com prioridade.
+                  fetchPriority="high"
+                  decoding="async"
+                  className="aspect-9/11 w-full object-cover object-top"
                 />
                 {ehExemplo && (
                   <Badge variant="neutro" className="absolute right-3 bottom-3">
