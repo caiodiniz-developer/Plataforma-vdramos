@@ -3,7 +3,8 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { GALERIA, RETRATO } from '@/conteudo/galeria'
+import { GALERIA, RETRATO, RETRATO_SOBRE } from '@/conteudo/galeria'
+import { GRANDES_NUMEROS, PROPOSTA_DE_VALOR, STACK, TRAJETORIA } from '@/conteudo/marca'
 import type { DadosDaLanding } from '@/dados/landing'
 import Landing from './Landing'
 
@@ -49,7 +50,10 @@ describe('Landing — seções novas', () => {
     await screen.findByRole('heading', { level: 1 })
     const titulos = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
     expect(titulos).toEqual([
+      'Em números',
       'Frentes de trabalho',
+      'Trajetória',
+      'Como trabalho',
       'Sala de aula interativa',
       'Em sala e em projetos',
       'Dados e IA com rigor técnico e clareza didática.',
@@ -57,10 +61,71 @@ describe('Landing — seções novas', () => {
     ])
   })
 
-  it('usa o retrato de exemplo, com etiqueta, quando o professor não enviou foto', async () => {
+  it('o hero usa o retrato real em WebP, sem a etiqueta de exemplo e sem carga adiada', async () => {
     abrir()
     const retrato = await screen.findByAltText(RETRATO.alt)
-    expect(retrato.getAttribute('src')).toBe(RETRATO.arquivo)
+    expect(retrato.getAttribute('src')).toBe('/fotos/vitor-ramos-retrato.webp')
+    expect(retrato.getAttribute('loading')).toBeNull()
+    expect(retrato.closest('figure')!.textContent).not.toContain('Foto de exemplo')
+  })
+
+  it('grandes números: cada valor é lido inteiro por leitor de tela, com rótulo e detalhe', async () => {
+    abrir()
+    const secao = (await screen.findByRole('heading', { name: 'Em números' })).closest('section')!
+    const itens = within(secao).getAllByRole('listitem')
+    expect(itens).toHaveLength(GRANDES_NUMEROS.length)
+    expect(itens.map((li) => li.querySelector('.sr-only')?.textContent)).toEqual(['+15', '+50', '2', '7+', '3+'])
+    // O número que conta na tela é decorativo.
+    for (const li of itens) expect(li.querySelector('[data-conta]')!.closest('[aria-hidden="true"]')).not.toBeNull()
+    expect(within(secao).getByText('Pessoas lideradas')).toBeTruthy()
+  })
+
+  it('trajetória: três momentos em abas, começando pela engenharia de dados', async () => {
+    abrir()
+    const secao = (await screen.findByRole('heading', { name: 'Trajetória' })).closest('section')!
+    const abas = within(secao).getAllByRole('tab')
+    expect(abas.map((a) => a.textContent)).toEqual(TRAJETORIA.map((m) => m.periodo + m.titulo))
+    expect(abas[0].getAttribute('aria-selected')).toBe('true')
+    expect(within(secao).getByRole('heading', { level: 3, name: 'Senior Data Engineer & Tech Lead' })).toBeTruthy()
+    expect(within(secao).getByText('Apllos Solutions')).toBeTruthy()
+
+    await userEvent.click(abas[1])
+    expect(within(secao).getByRole('heading', { level: 3, name: 'Gerente de Desenvolvimento de Negócios' })).toBeTruthy()
+    expect(within(secao).getByText('Claro Brasil')).toBeTruthy()
+    expect(within(secao).queryByText('Apllos Solutions')).toBeNull()
+
+    await userEvent.click(abas[2])
+    expect(within(secao).getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
+      'Professor e trainer',
+      'Autor técnico',
+      'Professor conteudista',
+      'Voluntariado',
+    ])
+  })
+
+  it('como trabalho: proposta de valor, perfil em T, stack e link do GitHub em nova aba', async () => {
+    abrir()
+    const secao = (await screen.findByRole('heading', { name: 'Como trabalho' })).closest('section')!
+    expect(within(secao).getByText(PROPOSTA_DE_VALOR)).toBeTruthy()
+    expect(within(secao).getByText('Engenharia de dados')).toBeTruthy()
+    for (const grupo of STACK) {
+      const lista = within(secao).getByRole('list', { name: grupo.titulo })
+      expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual(grupo.itens)
+    }
+    const foto = within(secao).getByAltText(RETRATO_SOBRE.alt)
+    expect(foto.getAttribute('loading')).toBe('lazy')
+    expect(foto.getAttribute('src')).toMatch(/\.webp$/)
+    const github = within(secao).getByRole('link', { name: /Projetos e histórico no GitHub/ })
+    expect(github.getAttribute('href')).toBe('https://github.com/admvitorramos')
+    expect(github.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
+  it('o menu leva às seções novas', async () => {
+    abrir()
+    await screen.findByRole('heading', { level: 1 })
+    const menu = screen.getAllByRole('navigation', { name: 'Seções da página' })[0]
+    expect(within(menu).getByRole('link', { name: 'Trajetória' }).getAttribute('href')).toBe('#trajetoria')
+    expect(within(menu).getByRole('link', { name: 'Como trabalho' }).getAttribute('href')).toBe('#sobre')
   })
 
   it('mostra todas as fotos da galeria marcadas como exemplo', async () => {
