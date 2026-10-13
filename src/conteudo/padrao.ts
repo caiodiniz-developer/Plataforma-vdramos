@@ -1,14 +1,15 @@
 import type { PerfilPublico } from '@/dados/landing'
+import { PROPOSTA_DE_VALOR, TITULO_DO_PERFIL } from './marca'
 
 /**
  * Conteúdo da landing enquanto `perfil_publico` não é preenchido no admin.
- * O texto vem do Brand Style Guide (frase de apresentação e eyebrow). Os
+ * O título e a frase são o posicionamento de marca (`./marca.ts`). Os
  * canais de contato ficam vazios de propósito: não se inventa dado de contato.
  */
 export const PERFIL_PUBLICO_PADRAO: PerfilPublico = {
   nome_exibicao: 'Vitor Ramos',
-  titulo: 'Dados · IA · Educação',
-  bio: 'Construindo produtos e educação em dados e inteligência artificial — do modelo ao letramento, com rigor técnico e clareza didática.',
+  titulo: TITULO_DO_PERFIL,
+  bio: PROPOSTA_DE_VALOR,
   foto_path: null,
   email_contato: '',
   telefone: null,
